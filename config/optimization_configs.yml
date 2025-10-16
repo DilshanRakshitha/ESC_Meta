@@ -1,0 +1,145 @@
+# ESC Meta Hyperparameter Optimization Configuration
+# Configuration file for hyperparameter optimization
+# Allows easy adjustment of optimization parameters
+
+# Study settings
+study:
+  study_name: 'esc_meta_optimization'
+  storage: 'sqlite:///optimization/optuna_study.db'
+  direction: 'maximize'  # maximize accuracy
+  n_trials: 20  # Small number for quick testing
+  n_jobs: 1  # Parallel jobs
+  timeout: 3600  # 1 hour timeout
+  load_if_exists: true
+
+# Cross-validation settings
+cross_validation:
+  n_splits: 3  # Reduced from 5 for speed
+  random_state: 42
+  shuffle: true
+
+# Training settings
+training:
+  max_epochs: 30  # Reduced from 50 for speed
+  patience: 8  # Early stopping patience
+  batch_size_options: [32, 64]  # Limited options
+  device: 'auto'  # 'cpu', 'cuda', or 'auto'
+
+# Hyperparameter ranges for different models
+hyperparameters:
+  common:
+    learning_rate:
+      type: 'loguniform'
+      low: 0.00001  # 1e-5
+      high: 0.01    # 1e-2
+    batch_size:
+      type: 'categorical'
+      choices: [32, 64]  # Limited choices for speed
+    optimizer:
+      type: 'categorical'
+      choices: ['adam', 'adamw']  # Limited optimizers
+    weight_decay:
+      type: 'loguniform'
+      low: 0.000001  # 1e-6
+      high: 0.001     # 1e-3
+
+  alexnet:
+    dropout_rate:
+      type: 'uniform'
+      low: 0.3
+      high: 0.7
+
+  densenet:
+    growth_rate:
+      type: 'categorical'
+      choices: [16, 24, 32]
+    dropout_rate:
+      type: 'uniform'
+      low: 0.1
+      high: 0.3
+
+  efficientnet:
+    dropout_rate:
+      type: 'uniform'
+      low: 0.2
+      high: 0.5
+    drop_connect_rate:
+      type: 'uniform'
+      low: 0.1
+      high: 0.3
+
+  inception:
+    dropout_rate:
+      type: 'uniform'
+      low: 0.2
+      high: 0.6
+    aux_dropout_rate:
+      type: 'uniform'
+      low: 0.5
+      high: 0.8
+
+  resnet:
+    dropout_rate:
+      type: 'uniform'
+      low: 0.1
+      high: 0.4
+
+  mobilenet:
+    dropout_rate:
+      type: 'uniform'
+      low: 0.1
+      high: 0.4
+    width_multiplier:
+      type: 'categorical'
+      choices: [0.75, 1.0, 1.25]
+
+  kan:
+    hidden_dim:
+      type: 'categorical'
+      choices: [256, 512]  # Limited choices
+    dropout_rate:
+      type: 'uniform'
+      low: 0.1
+      high: 0.5
+
+  ickan:
+    hidden_dim:
+      type: 'categorical'
+      choices: [256, 512]
+    dropout_rate:
+      type: 'uniform'
+      low: 0.1
+      high: 0.5
+    icassp_layers:
+      type: 'int'
+      low: 2
+      high: 4
+
+  wavkan:
+    hidden_dim:
+      type: 'categorical'
+      choices: [256, 512]
+    dropout_rate:
+      type: 'uniform'
+      low: 0.1
+      high: 0.5
+    wavelet_type:
+      type: 'categorical'
+      choices: ['morlet', 'mexican_hat']
+
+# Pruning settings
+pruning:
+  enabled: true
+  pruner: 'median'  # 'median', 'successive_halving', or 'hyperband'
+  n_startup_trials: 5
+  n_warmup_steps: 10
+  interval_steps: 1
+
+# Logging and output settings
+logging:
+  log_level: 'INFO'
+  save_plots: true
+  plot_dir: 'optimization/plots'
+  log_dir: 'optimization/logs'
+  save_best_params: true
+  save_study: true

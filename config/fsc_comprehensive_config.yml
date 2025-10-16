@@ -1,0 +1,282 @@
+# FSC Meta Configuration File
+# Comprehensive configuration matching FSC Original strategies for identical accuracy
+
+# =============================================================================
+# DATA PROCESSING STRATEGIES
+# =============================================================================
+
+data_processing:
+  # Strategy selection: 'fsc_original' uses their exact preprocessing
+  strategy: 'fsc_original'  # Options: 'fsc_original', 'raw_audio', 'custom'
+  
+  # Audio parameters (FSC Original specifications)
+  audio:
+    sample_rate: 20000
+    duration: 5.0  # seconds
+    input_length: 100000  # 20000 * 5
+  
+  # Feature extraction (FSC Original methods)
+  features:
+    type: 'mel'  # Options: 'mel', 'mfcc', 'mixed'
+    
+    # MEL spectrogram parameters (FSC Original)
+    mel:
+      n_mels: 128
+      n_fft_variants: [2048, 1024, 512]  # Multi-scale approach
+      hop_length: 512
+      power_to_db: true
+      
+    # MFCC parameters (FSC Original)
+    mfcc:
+      n_mfcc: 128
+      n_fft_variants: [2048, 1024, 512]
+      hop_length: 512
+      
+    # Mixed features (combining mel + mfcc)
+    mixed:
+      mel_weight: 0.6
+      mfcc_weight: 0.4
+  
+  # Data augmentation (FSC Original strategies)
+  augmentation:
+    enabled: true
+    strategies:
+      - 'none'           # Original audio
+      - 'time_stretch_fast'  # 1.5x speed
+      - 'time_stretch_slow'  # 0.667x speed  
+      - 'pitch_shift_up'     # +2 semitones
+      - 'pitch_shift_down'   # -2 semitones
+      - 'gaussian_noise'     # 0.001-0.015 amplitude
+    
+    # Augmentation parameters
+    time_stretch:
+      fast_rate: 1.5
+      slow_rate: 0.667
+    
+    pitch_shift:
+      up_steps: 2
+      down_steps: -2
+    
+    gaussian_noise:
+      min_amplitude: 0.001
+      max_amplitude: 0.015
+      probability: 0.5
+
+# =============================================================================
+# MODEL ARCHITECTURES (FSC Original implementations)
+# =============================================================================
+
+models:
+  # AlexNet (FSC Original architecture)
+  alexnet:
+    type: 'fsc_alexnet'
+    layers:
+      - {type: 'conv2d', filters: 128, kernel_size: 11, stride: 4, activation: 'relu'}
+      - {type: 'batch_norm'}
+      - {type: 'max_pool2d', pool_size: 2}
+      - {type: 'conv2d', filters: 256, kernel_size: 5, stride: 1, padding: 'same', activation: 'relu'}
+      - {type: 'batch_norm'}
+      - {type: 'max_pool2d', pool_size: 3}
+      - {type: 'conv2d', filters: 256, kernel_size: 3, stride: 1, padding: 'same', activation: 'relu'}
+      - {type: 'batch_norm'}
+      - {type: 'conv2d', filters: 256, kernel_size: 1, stride: 1, padding: 'same', activation: 'relu'}
+      - {type: 'batch_norm'}
+      - {type: 'conv2d', filters: 256, kernel_size: 1, stride: 1, padding: 'same', activation: 'relu'}
+      - {type: 'batch_norm'}
+      - {type: 'max_pool2d', pool_size: 2}
+      - {type: 'flatten'}
+      - {type: 'dense', units: 1024, activation: 'relu'}
+      - {type: 'dropout', rate: 0.5}
+      - {type: 'dense', units: 1024, activation: 'relu'}
+      - {type: 'dropout', rate: 0.5}
+      - {type: 'dense', units: 26, activation: 'softmax'}
+  
+  # ResNet50V2 (FSC Original)
+  resnet50v2:
+    type: 'resnet50v2'
+    pretrained: false
+    fine_tuning: false
+    
+  # DenseNet121 (FSC Original)
+  densenet121:
+    type: 'densenet121'
+    pretrained: false
+    fine_tuning: false
+    
+  # EfficientNetV2B0 (FSC Original)
+  efficientnetv2b0:
+    type: 'efficientnetv2b0'
+    pretrained: false
+    
+  # InceptionV3 (FSC Original)
+  inceptionv3:
+    type: 'inceptionv3'
+    pretrained: false
+    
+  # MobileNetV3-Small (FSC Original)
+  mobilenetv3_small:
+    type: 'mobilenetv3_small'
+    pretrained: false
+  
+  # KAN Models (FSC Original implementations)
+  kan:
+    type: 'kan'
+    variant: 'standard'  # Options: 'standard', 'efficient', 'high_performance'
+  
+  wavkan:
+    type: 'wavkan'
+    variant: 'standard'
+    
+  ickan:
+    type: 'ickan'
+    variant: 'standard'
+
+# =============================================================================
+# TRAINING CONFIGURATION (FSC Original methodology)
+# =============================================================================
+
+training:
+  # Cross-validation (FSC Original uses 5-fold)
+  cross_validation:
+    enabled: true
+    n_folds: 5
+    stratified: true
+    random_state: 42
+  
+  # Training parameters (FSC Original specifications)
+  hyperparameters:
+    batch_size: 64
+    epochs: 50
+    initial_learning_rate: 0.01
+    final_learning_rate: 0.0005
+    
+    # Optimizer (FSC Original uses Adam)
+    optimizer:
+      type: 'adam'
+      beta1: 0.9
+      beta2: 0.999
+      epsilon: 1e-07
+    
+    # Learning rate schedule (FSC Original uses exponential decay)
+    lr_schedule:
+      type: 'exponential_decay'
+      decay_steps: 1  # Per epoch
+      decay_rate: 0.941845  # Calculated to reach final_lr in max epochs
+    
+    # Early stopping (FSC Original methodology)
+    early_stopping:
+      enabled: true
+      patience: 10
+      monitor: 'val_accuracy'
+      mode: 'max'
+      restore_best_weights: true
+  
+  # Loss function
+  loss:
+    type: 'categorical_crossentropy'  # FSC Original uses this
+    
+  # Metrics
+  metrics:
+    - 'accuracy'
+    - 'top_3_accuracy'
+
+# =============================================================================
+# DATA PATHS AND SOURCES
+# =============================================================================
+
+data:
+  # FSC Original preprocessed data (best performance)
+  fsc_original:
+    base_path: '/home/dilshan/Documents/ESC/temp1/Forest-Sound-Analysis-on-Edge-main/datasets/fsc22/Pickle_Files'
+    feature_types:
+      - 'aug_ts_ps_mel_features_5_20'      # Time+Pitch shifted MEL (best)
+      - 'aug_ts_ps_mfcc_features_5_20'     # Time+Pitch shifted MFCC
+      - 'aug_ts_mel_features_5_20'         # Time shifted MEL only
+      - 'aug_ts_mfcc_features_5_20'        # Time shifted MFCC only
+      - 'mel_features_5_20'                # Pure MEL features
+    
+    # Default feature type (highest accuracy)
+    default_feature_type: 'aug_ts_ps_mel_features_5_20'
+  
+  # Raw audio data (fallback)
+  raw_audio:
+    csv_path: 'data/fsc22/FSC22.csv'
+    audio_path: 'data/fsc22/wav44'
+    
+  # Output paths
+  results:
+    base_dir: 'results'
+    models_dir: 'models'
+    plots_dir: 'plots'
+    logs_dir: 'logs'
+
+# =============================================================================
+# EXPERIMENT CONFIGURATION
+# =============================================================================
+
+experiment:
+  # Experiment naming
+  name: 'fsc_meta_comprehensive'
+  version: '1.0'
+  
+  # Reproducibility
+  random_seed: 42
+  deterministic: true
+  
+  # Hardware configuration
+  device:
+    prefer_gpu: true
+    mixed_precision: false  # FSC Original doesn't use this
+    
+  # Logging and monitoring
+  logging:
+    level: 'INFO'
+    save_plots: true
+    save_metrics: true
+    save_model_weights: true
+  
+  # Performance testing
+  benchmarking:
+    enabled: true
+    compare_with_baseline: true
+    expected_accuracy_threshold: 0.85  # FSC Original achieves ~89%
+
+# =============================================================================
+# STRATEGY COMBINATIONS (FSC Original proven combinations)
+# =============================================================================
+
+strategy_presets:
+  # Best performing combination (FSC Original)
+  fsc_original_best:
+    model: 'alexnet'
+    data: 'fsc_original'
+    feature_type: 'aug_ts_ps_mel_features_5_20'
+    augmentation: true
+    expected_accuracy: 0.89
+  
+  # Alternative high-performance combinations
+  fsc_original_resnet:
+    model: 'resnet50v2'
+    data: 'fsc_original'
+    feature_type: 'aug_ts_ps_mel_features_5_20'
+    expected_accuracy: 0.87
+    
+  fsc_original_densenet:
+    model: 'densenet121'
+    data: 'fsc_original'
+    feature_type: 'aug_ts_ps_mel_features_5_20'
+    expected_accuracy: 0.86
+  
+  # KAN variants (FSC Original implementations)
+  fsc_original_kan:
+    model: 'kan'
+    data: 'fsc_original'
+    feature_type: 'aug_ts_ps_mel_features_5_20'
+    expected_accuracy: 0.82
+  
+  # Raw audio fallback
+  raw_audio_resnet:
+    model: 'resnet18'
+    data: 'raw_audio'
+    augmentation: true
+    expected_accuracy: 0.72

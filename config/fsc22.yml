@@ -1,0 +1,130 @@
+fsc22:
+  # Dataset configuration
+  dataset:
+    name: 'FSC22'
+    num_classes: 26
+    sample_rate: 20000
+    input_length: 100000  # 5 seconds at 20kHz
+    
+  # File paths
+  path:
+    meta_data: '/home/dilshan/Documents/ESC/temp1/ESC_Meta/data/fsc22/FSC22.csv'
+    base_data: '/home/dilshan/Documents/ESC/temp1/ESC_Meta/data/fsc22/wav44'
+    plots: '/home/dilshan/Documents/ESC/temp1/ESC_Meta/plots/fsc22'
+    results: '/home/dilshan/Documents/ESC/temp1/ESC_Meta/results'
+    models: '/home/dilshan/Documents/ESC/temp1/ESC_Meta/models/saved'
+    
+  # Audio processing configuration
+  audio:
+    sample_rate: 20000
+    input_length: 100000  # 5 seconds
+    normalize: true
+    mono: true
+    
+  # Feature extraction configuration
+  feature:
+    # Available feature types: 'mel', 'mfcc', 'chroma', 'spectral_contrast', 'tonnetz', 'combined'
+    type: 'mel'
+    
+    # Augmentation configuration
+    # Available types: 1 (none), 2 (speed up), 3 (slow down), 4 (pitch up), 5 (pitch down), 6 (reverse + noise)
+    augment: 1
+    
+    # Mel spectrogram parameters
+    mel:
+      n_mels: 128
+      n_fft: [2048, 1024, 512]
+      hop_length: 512
+      
+    # MFCC parameters
+    mfcc:
+      n_mfcc: 13
+      n_fft: 2048
+      hop_length: 512
+      
+  # Training configuration
+  training:
+    batch_size: 32
+    epochs: 100
+    learning_rate: 0.001
+    optimizer: 'adam'  # 'adam', 'adamw', 'sgd'
+    scheduler: 'cosine'  # 'cosine', 'step', 'reduce', null
+    early_stopping_patience: 10
+    save_best: true
+    
+    # Cross-validation
+    cv_folds: 5
+    stratified: true
+    
+    # Data loading
+    num_workers: 4
+    pin_memory: true
+    
+  # Model configuration
+  models:
+    # Available models: 'alexnet', 'densenet121', 'resnet50v2', 'efficientnetv2b0', 'mobilenetv3_small', 'inceptionv3'
+    default: ['alexnet']
+    
+    # Model-specific parameters
+    alexnet:
+      input_size: 3
+      num_classes: 26
+      
+    densenet121:
+      input_channels: 3
+      num_classes: 26
+      pretrained: false
+      dropout_rate: 0.5
+      
+    resnet50v2:
+      input_channels: 3
+      num_classes: 26
+      pretrained: false
+      dropout_rate: 0.5
+      
+    efficientnetv2b0:
+      input_channels: 3
+      num_classes: 26
+      dropout_rate: 0.2
+      drop_connect_rate: 0.2
+      
+    mobilenetv3_small:
+      input_channels: 3
+      num_classes: 26
+      dropout_rate: 0.2
+      
+    inceptionv3:
+      input_channels: 3
+      num_classes: 26
+      dropout_rate: 0.5
+      aux_logits: false
+      
+  # Evaluation configuration
+  evaluation:
+    metrics: ['accuracy', 'precision', 'recall', 'f1', 'auc']
+    save_confusion_matrix: true
+    save_roc_curves: true
+    save_reports: true
+    
+  # Compression configuration (optional)
+  compression:
+    enabled: false
+    pruning:
+      enabled: false
+      type: 'magnitude'  # 'magnitude', 'structured'
+      ratio: 0.5
+    quantization:
+      enabled: false
+      type: 'dynamic'  # 'dynamic', 'post_training'
+      
+  # Logging and output
+  logging:
+    level: 'INFO'
+    save_logs: true
+    log_file: 'logs/esc_meta.log'
+    
+  # Visualization
+  visualization:
+    save_plots: true
+    plot_format: 'png'
+    dpi: 300
