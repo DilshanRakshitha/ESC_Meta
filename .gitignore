@@ -1,0 +1,11 @@
+/best_model_fold_1.pth
+/best_model_fold_2.pth
+/best_model_fold_3.pth
+/best_model_fold_4.pth
+/best_model_fold_5.pth
+/run_model_comparison.sh
+/data/*
+*/__pycache__
+/optimization/plots/*
+/optimization/results
+/optimization/optuna_study.db
