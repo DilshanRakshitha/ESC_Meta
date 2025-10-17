@@ -15,24 +15,8 @@ from typing import Dict, Any, Optional, List, Tuple
 from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import LabelEncoder
 
-# Import data loader with error handling
-try:
-    from features.fsc_original_features import FSCOriginalDataLoader
-    print("✅ Data loader imported")
-    FSC_LOADER_AVAILABLE = True
-except ImportError as e:
-    print(f"⚠️ Data loader import error: {e}")
-    FSC_LOADER_AVAILABLE = False
-
-# Import trainer if available
-try:
-    from models.training.trainer import FSCOriginalTrainer, FSCOriginalCrossValidator
-    print("✅ Trainer modules imported")
-    FSC_TRAINER_AVAILABLE = True
-except ImportError as e:
-    print(f"⚠️ Trainer import error: {e}")
-    FSC_TRAINER_AVAILABLE = False
-
+from features.fsc_original_features import FSCOriginalDataLoader
+from models.training.trainer import FSCOriginalTrainer, FSCOriginalCrossValidator
 from models.model_factory import SimpleModelFactory
 
 warnings.filterwarnings('ignore')
@@ -52,33 +36,27 @@ sys.path.extend([
 
 
 class FSCMetaMain:
-    """
-    Main FSC Meta pipeline with complete module integration
-    Links all components: data loading → feature extraction → model training → evaluation
-    """
     
-    def __init__(self, config_path: str = "config/fsc_comprehensive_config.yml"):
-        """Initialize with all components"""
+    def __init__(self, config_path):
         self.config_path = config_path
         self.config = self.load_config()
         
-        # Initialize all pipeline components
-        print("🔧 Initializing pipeline components...")
         self.setup_components()
         
+
     def load_config(self) -> Dict[str, Any]:
-        """Load configuration with fallback"""
+        
         try:
             with open(self.config_path, 'r') as f:
                 config = yaml.safe_load(f)
-            print(f"✅ Config loaded: {self.config_path}")
             return config
         except FileNotFoundError:
-            print(f"⚠️ Config not found: {self.config_path}, using defaults")
+            print(f"Config not found: {self.config_path}, using defaults")
             return self.get_default_config()
+        
     
     def get_default_config(self) -> Dict[str, Any]:
-        """Default configuration if config file not found"""
+        
         return {
             'data': {
                 'fsc_original': {
@@ -121,34 +99,15 @@ class FSCMetaMain:
             }
         }
     
+
     def setup_components(self):
-        """Setup all pipeline components with error handling"""
-        if FSC_LOADER_AVAILABLE:
-            try:
-                self.data_loader = FSCOriginalDataLoader(self.config)
-                print("✅ Data loader initialized")
-            except Exception as e:
-                print(f"⚠️ Data loader initialization failed: {e}")
-                self.data_loader = None
-        else:
-            print("⚠️ FSC data loader not available")
-            self.data_loader = None
+            
+        self.data_loader = FSCOriginalDataLoader(self.config)
         
-        # Simple model factory for your specific models
         self.model_factory = SimpleModelFactory()
-        print("✅ Simple model factory initialized")
     
+
     def load_data(self, strategy: str = 'auto') -> Tuple[np.ndarray, np.ndarray]:
-        """
-        Load data using specified strategy with fallbacks
-        
-        Args:
-            strategy: 'fsc_original', 'raw_audio', or 'auto'
-        
-        Returns:
-            features, labels arrays
-        """
-        print(f"📂 Loading data with strategy: {strategy}")
         
         if self.data_loader is None:
             return self.load_data_fallback()
@@ -163,34 +122,13 @@ class FSCMetaMain:
             else:  # auto
                 return self.data_loader.load_data('auto')
         except Exception as e:
-            print(f"⚠️ Data loading failed with {strategy}: {e}")
+            print(f"Data loading failed")
             return self.load_data_fallback()
     
+
     def load_data_fallback(self) -> Tuple[np.ndarray, np.ndarray]:
-        """Fallback data loading method"""
-        print("🔄 Using fallback data loading...")
         
-        # Try to find any available pickle files
-        fsc_data_paths = [
-            '../Forest-Sound-Analysis-on-Edge-main/datasets/fsc22/aug_ts_ps_mel_features_5_20.pkl',
-            'data/fsc22/features.pkl',
-        ]
-        
-        for path in fsc_data_paths:
-            if os.path.exists(path):
-                try:
-                    with open(path, 'rb') as f:
-                        data = pickle.load(f)
-                    if isinstance(data, tuple) and len(data) == 2:
-                        features, labels = data
-                        print(f"✅ Loaded data from: {path}")
-                        print(f"   Shape: {features.shape}, Classes: {len(np.unique(labels))}")
-                        return features, labels
-                except Exception as e:
-                    print(f"⚠️ Failed to load {path}: {e}")
-        
-        # Generate synthetic data as last resort
-        print("🎲 Generating synthetic data for testing...")
+        print("Generating synthetic data for testing...")
         n_samples = 1000
         # Generate 2D spectrogram-like data for CNN models: (samples, channels, height, width)
         # Using typical mel-spectrogram dimensions
@@ -200,121 +138,16 @@ class FSCMetaMain:
         return features, labels
     
     def create_model(self, model_name: str, input_shape: Tuple, num_classes: int):
-        """Create model with fallback"""
+        
         try:
             return self.model_factory.create_model(model_name, input_shape, num_classes)
         except Exception as e:
-            print(f"⚠️ Model factory failed: {e}")
-            # Fallback simple model
-            print("🔄 Creating fallback model...")
-            return self.create_simple_model(input_shape, num_classes)
+            print(f"Model creation failed: {e}")
+            
     
-    def create_simple_model(self, input_shape: Tuple, num_classes: int):
-        """Simple fallback model"""
-        if len(input_shape) == 1:  # 1D features
-            model = nn.Sequential(
-                nn.Linear(input_shape[0], 512),
-                nn.ReLU(),
-                nn.Dropout(0.5),
-                nn.Linear(512, 256),
-                nn.ReLU(),
-                nn.Dropout(0.3),
-                nn.Linear(256, num_classes)
-            )
-        else:  # 2D features (spectrograms)
-            model = nn.Sequential(
-                nn.Flatten(),
-                nn.Linear(np.prod(input_shape), 512),
-                nn.ReLU(),
-                nn.Dropout(0.5),
-                nn.Linear(512, 256),
-                nn.ReLU(),
-                nn.Dropout(0.3),
-                nn.Linear(256, num_classes)
-            )
-        return model
-    
-    def train_model_simple(self, features: np.ndarray, labels: np.ndarray, model_name: str):
-        """Simple training with cross-validation fallback"""
-        print(f"🔄 Training {model_name} with simple method...")
-        
-        # Setup
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        print(f"🔧 Device: {device}")
-        
-        # Encode labels
-        le = LabelEncoder()
-        labels_encoded = le.fit_transform(labels)
-        num_classes = len(np.unique(labels_encoded))
-        
-        # Convert to tensors
-        X = torch.FloatTensor(features)
-        y = torch.LongTensor(labels_encoded)
-        
-        # Cross-validation
-        skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-        fold_accuracies = []
-        
-        for fold, (train_idx, val_idx) in enumerate(skf.split(features, labels_encoded)):
-            print(f"\n📊 Fold {fold + 1}/5")
-            
-            # Split data
-            X_train, X_val = X[train_idx], X[val_idx]
-            y_train, y_val = y[train_idx], y[val_idx]
-            
-            # Create model
-            model = self.create_model(model_name, features.shape[1:], num_classes)
-            model = model.to(device)
-            
-            # Training setup
-            criterion = nn.CrossEntropyLoss()
-            optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-            
-            # Training loop
-            model.train()
-            for epoch in range(20):  # Simplified training
-                X_batch, y_batch = X_train.to(device), y_train.to(device)
-                
-                optimizer.zero_grad()
-                outputs = model(X_batch)
-                loss = criterion(outputs, y_batch)
-                loss.backward()
-                optimizer.step()
-                
-                if epoch % 5 == 0:
-                    print(f"   Epoch {epoch}: Loss = {loss.item():.4f}")
-            
-            # Validation
-            model.eval()
-            with torch.no_grad():
-                X_val_gpu = X_val.to(device)
-                val_outputs = model(X_val_gpu)
-                _, predicted = torch.max(val_outputs.data, 1)
-                accuracy = (predicted == y_val.to(device)).float().mean().item()
-                fold_accuracies.append(accuracy * 100)
-                print(f"   Fold {fold + 1} Accuracy: {accuracy * 100:.2f}%")
-        
-        # Results
-        mean_acc = np.mean(fold_accuracies)
-        std_acc = np.std(fold_accuracies)
-        
-        return {
-            'mean_accuracy': mean_acc,
-            'std_accuracy': std_acc,
-            'individual_accuracies': fold_accuracies,
-            'best_fold_acc': max(fold_accuracies),
-            'worst_fold_acc': min(fold_accuracies)
-        }
     
     def run_experiment(self, model_name: str = None, strategy_preset: str = None):
-        """
-        Run complete experiment with comprehensive error handling
-        """
-        print("=" * 90)
-        print("🚀 FSC META - UNIFIED PIPELINE EXECUTION")
-        print("=" * 90)
         
-        # Strategy selection
         if strategy_preset and strategy_preset in self.config['strategy_presets']:
             preset = self.config['strategy_presets'][strategy_preset]
             model_name = preset['model']
@@ -392,7 +225,7 @@ class FSCMetaMain:
 
 
 def main():
-    """Main execution function"""
+    
     parser = argparse.ArgumentParser(description='FSC Meta - Complete Pipeline')
     parser.add_argument('--config', type=str, 
                        default='config/fsc_comprehensive_config.yml',
@@ -406,28 +239,21 @@ def main():
     
     args = parser.parse_args()
     
-    print("🎵 FSC META - UNIFIED MAIN PIPELINE")
-    print("🔗 All modules linked and ready")
-    
-    # Initialize pipeline
     try:
         pipeline = FSCMetaMain(args.config)
-        print("✅ Pipeline initialized successfully")
+        
     except Exception as e:
-        print(f"⚠️ Pipeline initialization issues: {e}")
-        print("🔄 Continuing with fallback configuration...")
-        pipeline = FSCMetaMain()
+        print(f"Pipeline initialization issues: {e}")
     
-    # Run experiment
     try:
         results = pipeline.run_experiment(
             model_name=args.model,
             strategy_preset=args.preset
         )
-        print("✅ Experiment completed successfully!")
+        print("Experiment completed successfully!")
         return results
     except Exception as e:
-        print(f"❌ Experiment failed: {e}")
+        print(f"Experiment failed: {e}")
         import traceback
         traceback.print_exc()
         return None
