@@ -14,45 +14,8 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List, Tuple
 from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import LabelEncoder
-warnings.filterwarnings('ignore')
 
-
-project_root = Path(__file__).parent.absolute()
-sys.path.extend([
-    str(project_root),
-    str(project_root / 'models'),
-    str(project_root / 'models' / 'architectures'),
-    str(project_root / 'models' / 'training'),
-    str(project_root / 'features'),
-    str(project_root / 'utils'),
-    str(project_root / 'config'),
-])
-
-try:
-    from models.architectures.AlexNet import AlexNet
-    print("✅ AlexNet imported")
-except ImportError as e:
-    print(f"⚠️ AlexNet import error: {e}")
-
-try:
-    from models.architectures.kan_models import create_high_performance_kan
-    print("✅ KAN model imported")
-except ImportError as e:
-    print(f"⚠️ KAN import error: {e}")
-
-try:
-    from models.architectures.ickan_models import create_high_performance_ickan
-    print("✅ ICKAN model imported")
-except ImportError as e:
-    print(f"⚠️ ICKAN import error: {e}")
-
-try:
-    from models.architectures.wavkan_models import create_high_performance_wavkan
-    print("✅ WavKAN model imported")
-except ImportError as e:
-    print(f"⚠️ WavKAN import error: {e}")
-
-# Import data loader (keeping only essential parts)
+# Import data loader with error handling
 try:
     from features.fsc_original_features import FSCOriginalDataLoader
     print("✅ Data loader imported")
@@ -70,81 +33,22 @@ except ImportError as e:
     print(f"⚠️ Trainer import error: {e}")
     FSC_TRAINER_AVAILABLE = False
 
+from models.model_factory import SimpleModelFactory
 
-class SimpleModelFactory:
-    """Simple model factory for AlexNet, KAN, ICKAN, WavKAN"""
-    
-    def create_model(self, model_name: str, input_shape: Tuple, num_classes: int):
-        """Create model based on name"""
-        if model_name.lower() in ['alexnet', 'alex']:
-            # AlexNet expects input_channels as first parameter
-            if len(input_shape) == 3:  # (C, H, W)
-                input_channels = input_shape[0]
-            else:
-                input_channels = 3  # Default
-            return AlexNet(input_size=input_channels, num_classes=num_classes)
-        
-        elif model_name.lower() in ['densenet', 'densenet121']:
-            from models.architectures.DenseNet121 import create_densenet121
-            input_channels = input_shape[0] if len(input_shape) == 3 else 3
-            return create_densenet121(num_classes=num_classes, input_channels=input_channels)
-        
-        elif model_name.lower() in ['efficientnet', 'efficientnetv2', 'efficientnetv2b0']:
-            from models.architectures.EfficientNetV2B0 import create_efficientnet_v2_b0
-            input_channels = input_shape[0] if len(input_shape) == 3 else 3
-            return create_efficientnet_v2_b0(num_classes=num_classes, input_channels=input_channels)
-        
-        elif model_name.lower() in ['inception', 'inceptionv3']:
-            from models.architectures.InceptionV3 import create_inception_v3
-            input_channels = input_shape[0] if len(input_shape) == 3 else 3
-            return create_inception_v3(num_classes=num_classes, input_channels=input_channels)
-        
-        elif model_name.lower() in ['resnet', 'resnet50', 'resnet50v2']:
-            from models.architectures.ResNet50V2 import create_resnet50_v2
-            input_channels = input_shape[0] if len(input_shape) == 3 else 3
-            return create_resnet50_v2(num_classes=num_classes, input_channels=input_channels)
-        
-        elif model_name.lower() in ['resnet18']:
-            from models.architectures.ResNet50V2 import create_resnet18
-            input_channels = input_shape[0] if len(input_shape) == 3 else 3
-            return create_resnet18(num_classes=num_classes, input_channels=input_channels)
-        
-        elif model_name.lower() in ['mobilenet', 'mobilenetv3', 'mobilenetv3small']:
-            from models.architectures.MobileNetV3Small import create_mobilenet_v3_small
-            input_channels = input_shape[0] if len(input_shape) == 3 else 3
-            return create_mobilenet_v3_small(num_classes=num_classes, input_channels=input_channels)
-        
-        elif model_name.lower() in ['mobilenetv3large']:
-            from models.architectures.MobileNetV3Small import create_mobilenet_v3_large
-            input_channels = input_shape[0] if len(input_shape) == 3 else 3
-            return create_mobilenet_v3_large(num_classes=num_classes, input_channels=input_channels)
-            
-        elif model_name.lower() == 'kan':
-            # KAN expects (height, width, channels) but we have (channels, height, width)
-            if len(input_shape) == 3:  # (C, H, W) -> (H, W, C)
-                kan_input_shape = (input_shape[1], input_shape[2], input_shape[0])
-            else:
-                kan_input_shape = input_shape
-            return create_high_performance_kan(kan_input_shape, num_classes)
-            
-        elif model_name.lower() == 'ickan':
-            # ICKAN expects (height, width, channels) but we have (channels, height, width)
-            if len(input_shape) == 3:  # (C, H, W) -> (H, W, C)
-                ickan_input_shape = (input_shape[1], input_shape[2], input_shape[0])
-            else:
-                ickan_input_shape = input_shape
-            return create_high_performance_ickan(ickan_input_shape, num_classes)
-            
-        elif model_name.lower() == 'wavkan':
-            # WavKAN expects (height, width, channels) but we have (channels, height, width)
-            if len(input_shape) == 3:  # (C, H, W) -> (H, W, C)
-                wavkan_input_shape = (input_shape[1], input_shape[2], input_shape[0])
-            else:
-                wavkan_input_shape = input_shape
-            return create_high_performance_wavkan(wavkan_input_shape, num_classes)
-            
-        else:
-            raise ValueError(f"Unknown model: {model_name}")
+warnings.filterwarnings('ignore')
+
+
+project_root = Path(__file__).parent.absolute()
+sys.path.extend([
+    str(project_root),
+    str(project_root / 'models'),
+    str(project_root / 'models' / 'architectures'),
+    str(project_root / 'models' / 'training'),
+    str(project_root / 'features'),
+    str(project_root / 'utils'),
+    str(project_root / 'config'),
+])
+
 
 
 class FSCMetaMain:
@@ -287,9 +191,12 @@ class FSCMetaMain:
         
         # Generate synthetic data as last resort
         print("🎲 Generating synthetic data for testing...")
-        n_samples, n_features = 1000, 128
-        features = np.random.randn(n_samples, n_features)
+        n_samples = 1000
+        # Generate 2D spectrogram-like data for CNN models: (samples, channels, height, width)
+        # Using typical mel-spectrogram dimensions
+        features = np.random.randn(n_samples, 1, 128, 87)  # 1 channel, 128 mel bins, 87 time frames
         labels = np.random.randint(0, 10, n_samples)
+        print(f"   Generated synthetic spectrogram data: {features.shape}")
         return features, labels
     
     def create_model(self, model_name: str, input_shape: Tuple, num_classes: int):

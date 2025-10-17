@@ -187,7 +187,7 @@ training:
 data:
   # FSC Original preprocessed data (best performance)
   fsc_original:
-    base_path: '/home/dilshan/Documents/ESC/temp1/Forest-Sound-Analysis-on-Edge-main/datasets/fsc22/Pickle_Files'
+    base_path: 'data/fsc22/Pickle_Files'
     feature_types:
       - 'aug_ts_ps_mel_features_5_20'      # Time+Pitch shifted MEL (best)
       - 'aug_ts_ps_mfcc_features_5_20'     # Time+Pitch shifted MFCC
