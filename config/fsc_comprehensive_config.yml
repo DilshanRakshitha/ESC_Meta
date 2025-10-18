@@ -70,26 +70,6 @@ models:
   # AlexNet (FSC Original architecture)
   alexnet:
     type: 'fsc_alexnet'
-    layers:
-      - {type: 'conv2d', filters: 128, kernel_size: 11, stride: 4, activation: 'relu'}
-      - {type: 'batch_norm'}
-      - {type: 'max_pool2d', pool_size: 2}
-      - {type: 'conv2d', filters: 256, kernel_size: 5, stride: 1, padding: 'same', activation: 'relu'}
-      - {type: 'batch_norm'}
-      - {type: 'max_pool2d', pool_size: 3}
-      - {type: 'conv2d', filters: 256, kernel_size: 3, stride: 1, padding: 'same', activation: 'relu'}
-      - {type: 'batch_norm'}
-      - {type: 'conv2d', filters: 256, kernel_size: 1, stride: 1, padding: 'same', activation: 'relu'}
-      - {type: 'batch_norm'}
-      - {type: 'conv2d', filters: 256, kernel_size: 1, stride: 1, padding: 'same', activation: 'relu'}
-      - {type: 'batch_norm'}
-      - {type: 'max_pool2d', pool_size: 2}
-      - {type: 'flatten'}
-      - {type: 'dense', units: 1024, activation: 'relu'}
-      - {type: 'dropout', rate: 0.5}
-      - {type: 'dense', units: 1024, activation: 'relu'}
-      - {type: 'dropout', rate: 0.5}
-      - {type: 'dense', units: 26, activation: 'softmax'}
   
   # ResNet50V2 (FSC Original)
   resnet50v2:

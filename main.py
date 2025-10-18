@@ -152,73 +152,44 @@ class FSCMetaMain:
             preset = self.config['strategy_presets'][strategy_preset]
             model_name = preset['model']
             data_strategy = preset['data']
-            expected_acc = preset.get('expected_accuracy', 0.0)
-            print(f"🎯 Using preset: {strategy_preset}")
+            print(f"Using preset: {strategy_preset}")
         else:
             model_name = model_name or list(self.config['models'].keys())[0]
             data_strategy = 'auto'
-            expected_acc = 0.0
-            print(f"🎯 Using model: {model_name}")
+            print(f"Using model: {model_name}")
         
-        # Load data
         features, labels = self.load_data(data_strategy)
-        print(f"📊 Dataset: {len(features)} samples, {len(np.unique(labels))} classes")
-        print(f"📏 Feature shape: {features.shape}")
+        print(f"Dataset: {len(features)} samples, {len(np.unique(labels))} classes")
+        print(f"Feature shape: {features.shape}")
         
-        # Training
         try:
-            if FSC_TRAINER_AVAILABLE and hasattr(self, 'data_loader') and self.data_loader is not None:
-                # Use advanced training
-                print("🔬 Using FSC Original training methodology...")
-                
-                device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-                def model_creator():
-                    return self.create_model(model_name, features.shape[1:], len(np.unique(labels)))
-                
-                cv_trainer = FSCOriginalCrossValidator(
-                    model_creator_func=model_creator,
-                    device=device,
-                    random_state=42
-                )
-                
-                results = cv_trainer.run_kfold_training(features, labels, n_splits=5)
-            else:
-                # Use simple training
-                print("🔄 Using simple training method...")
-                results = self.train_model_simple(features, labels, model_name)
-                
+            
+            # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            device = torch.device('cpu')
+            def model_creator():
+                return self.create_model(model_name, features.shape[1:], len(np.unique(labels)))
+            
+            cv_trainer = FSCOriginalCrossValidator(
+                model_creator_func=model_creator,
+                device=device,
+                random_state=42
+            )
+            
+            results = cv_trainer.run_kfold_training(features, labels, n_splits=5)
+        
         except Exception as e:
-            print(f"⚠️ Advanced training failed: {e}")
-            print("🔄 Falling back to simple training...")
-            results = self.train_model_simple(features, labels, model_name)
+            print(f"Training failed: {e}")
         
         # Results
         accuracy = results['mean_accuracy']
         
         print(f"\n" + "=" * 90)
-        print(f"🎉 EXPERIMENT COMPLETED!")
-        print(f"📊 Results:")
+        print(f"EXPERIMENT COMPLETED!")
+        print(f"Results:")
         print(f"   Model: {model_name}")
         print(f"   Mean Accuracy: {accuracy:.2f}% ± {results['std_accuracy']:.2f}%")
         print(f"   Best Fold: {results['best_fold_acc']:.2f}%")
         print(f"   Individual Folds: {[f'{acc:.1f}%' for acc in results['individual_accuracies']]}")
-        
-        if expected_acc > 0:
-            diff = accuracy - (expected_acc * 100)
-            if abs(diff) <= 2.0:
-                print(f"✅ ACCURACY MATCH: Within 2% of expected ({expected_acc:.1%})")
-            else:
-                print(f"📊 Difference from expected: {diff:+.1f}%")
-        
-        # Performance tier
-        if accuracy >= 85:
-            print("🏆 Performance: Excellent")
-        elif accuracy >= 70:
-            print("✅ Performance: Good")
-        elif accuracy >= 50:
-            print("⚠️ Performance: Fair")
-        else:
-            print("❌ Performance: Needs improvement")
         
         print("=" * 90)
         return results
@@ -250,6 +221,7 @@ def main():
             model_name=args.model,
             strategy_preset=args.preset
         )
+        print('model =', args.model, 'strategy_preset =', args.preset)
         print("Experiment completed successfully!")
         return results
     except Exception as e:
