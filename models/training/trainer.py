@@ -1,8 +1,3 @@
-"""
-Training Utilities and Trainer Classes
-Enhanced with FSC Original research methodologies for superior performance
-"""
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -17,18 +12,14 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 from sklearn.model_selection import KFold, StratifiedKFold
 from tqdm import tqdm
 import warnings
+
 warnings.filterwarnings('ignore')
 
 
 class AudioDataset(Dataset):
-    """
-    Dataset class for audio features
-    """
     
     def __init__(self, features: List, labels: List, transform: Optional[Callable] = None):
         """
-        Initialize dataset
-        
         Args:
             features: List of feature arrays
             labels: List of labels
@@ -45,7 +36,6 @@ class AudioDataset(Dataset):
         feature = self.features[idx]
         label = self.labels[idx]
         
-        # Convert to tensor if not already
         if not isinstance(feature, torch.Tensor):
             feature = torch.tensor(feature, dtype=torch.float32)
         if not isinstance(label, torch.Tensor):
@@ -62,17 +52,12 @@ class AudioDataset(Dataset):
 
 
 class ModelTrainer:
-    """
-    Comprehensive model trainer with various optimization techniques
-    """
     
     def __init__(self, 
                  model: nn.Module,
                  device: str = 'cuda' if torch.cuda.is_available() else 'cpu',
                  model_name: str = 'model'):
         """
-        Initialize trainer
-        
         Args:
             model: Model to train
             device: Device to use for training
@@ -90,7 +75,6 @@ class ModelTrainer:
                            batch_size: int = 32,
                            num_workers: int = 4) -> Tuple[DataLoader, Optional[DataLoader]]:
         """
-        Prepare data loaders from feature data
         
         Args:
             train_data: Training data as [features, labels] pairs
@@ -101,7 +85,7 @@ class ModelTrainer:
         Returns:
             Tuple of (train_loader, val_loader)
         """
-        # Extract features and labels
+        
         train_features = [item[0] for item in train_data]
         train_labels = [item[1] for item in train_data]
         
@@ -133,8 +117,6 @@ class ModelTrainer:
                    criterion: nn.Module,
                    scheduler: Optional[Any] = None) -> Dict[str, float]:
         """
-        Train for one epoch
-        
         Args:
             train_loader: Training data loader
             optimizer: Optimizer
@@ -153,16 +135,12 @@ class ModelTrainer:
         for batch_idx, (data, target) in enumerate(pbar):
             data, target = data.to(self.device), target.to(self.device)
             
-            # Forward pass
             optimizer.zero_grad()
             output = self.model(data)
             loss = criterion(output, target)
-            
-            # Backward pass
             loss.backward()
             optimizer.step()
             
-            # Statistics
             total_loss += loss.item()
             _, predicted = output.max(1)
             total += target.size(0)
@@ -186,8 +164,6 @@ class ModelTrainer:
                       val_loader: DataLoader,
                       criterion: nn.Module) -> Dict[str, float]:
         """
-        Validate for one epoch
-        
         Args:
             val_loader: Validation data loader
             criterion: Loss function
@@ -228,15 +204,13 @@ class ModelTrainer:
               train_data: List[List],
               val_data: Optional[List[List]] = None,
               epochs: int = 100,
-              batch_size: int = 32,
+              batch_size: int = 64,
               learning_rate: float = 0.001,
               optimizer_type: str = 'adam',
               scheduler_type: Optional[str] = 'cosine',
               early_stopping_patience: int = 10,
               save_best: bool = True) -> Dict[str, List]:
         """
-        Complete training loop
-        
         Args:
             train_data: Training data
             val_data: Validation data
@@ -251,12 +225,12 @@ class ModelTrainer:
         Returns:
             Training history
         """
-        # Prepare data loaders
+        
         train_loader, val_loader = self.prepare_data_loaders(
             train_data, val_data, batch_size
         )
         
-        # Setup optimizer
+        
         if optimizer_type == 'adam':
             optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
         elif optimizer_type == 'adamw':
@@ -267,7 +241,7 @@ class ModelTrainer:
         else:
             raise ValueError(f"Unsupported optimizer: {optimizer_type}")
         
-        # Setup scheduler
+        
         scheduler = None
         if scheduler_type == 'cosine':
             scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
@@ -276,10 +250,10 @@ class ModelTrainer:
         elif scheduler_type == 'reduce':
             scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=5)
         
-        # Setup loss function
+        
         criterion = nn.CrossEntropyLoss()
         
-        # Training loop
+        
         best_val_acc = 0.0
         patience_counter = 0
         
@@ -327,8 +301,6 @@ class ModelTrainer:
     
     def evaluate(self, test_data: List[List], batch_size: int = 32) -> Dict[str, Any]:
         """
-        Evaluate model on test data
-        
         Args:
             test_data: Test data
             batch_size: Batch size
@@ -374,7 +346,7 @@ class ModelTrainer:
         }
     
     def save_model(self, filename: str):
-        """Save model state"""
+        
         torch.save({
             'model_state_dict': self.model.state_dict(),
             'train_history': self.train_history,
@@ -383,7 +355,7 @@ class ModelTrainer:
         print(f"Model saved to {filename}")
     
     def load_model(self, filename: str):
-        """Load model state"""
+        
         checkpoint = torch.load(filename, map_location=self.device)
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.train_history = checkpoint.get('train_history', [])
