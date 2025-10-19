@@ -15,7 +15,7 @@ from typing import Dict, Any, Optional, List, Tuple
 from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import LabelEncoder
 
-from features.fsc_original_features import FSCOriginalDataLoader
+from features.fsc_original_features import FSCDataLoader
 from models.training.trainer import FSCTrainer, FSCCrossValidator
 from models.model_factory import SimpleModelFactory
 
@@ -102,7 +102,7 @@ class FSCMetaMain:
 
     def setup_components(self):
             
-        self.data_loader = FSCOriginalDataLoader(self.config)
+        self.data_loader = FSCDataLoader(self.config)
         
         self.model_factory = SimpleModelFactory()
     
