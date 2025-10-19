@@ -16,7 +16,7 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import LabelEncoder
 
 from features.fsc_original_features import FSCOriginalDataLoader
-from models.training.trainer import FSCOriginalTrainer, FSCOriginalCrossValidator
+from models.training.trainer import FSCTrainer, FSCCrossValidator
 from models.model_factory import SimpleModelFactory
 
 warnings.filterwarnings('ignore')
@@ -169,7 +169,7 @@ class FSCMetaMain:
             def model_creator():
                 return self.create_model(model_name, features.shape[1:], len(np.unique(labels)))
             
-            cv_trainer = FSCOriginalCrossValidator(
+            cv_trainer = FSCCrossValidator(
                 model_creator_func=model_creator,
                 device=device,
                 random_state=42
