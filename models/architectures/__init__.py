@@ -1,8 +1,3 @@
-"""
-Model Architectures Package
-Complete collection of CNN and KAN models for audio classification
-"""
-
 # Core CNN Models
 try:
     from .AlexNet import AlexNet
@@ -13,7 +8,6 @@ try:
 except ImportError as e:
     print(f"Warning: Could not import CNN models: {e}")
 
-# ResNet models - imported separately to isolate issues
 try:
     from .ResNet50V2 import ResNet50V2, ResNet18, create_resnet50_v2, create_resnet18
 except ImportError as e:
@@ -53,10 +47,4 @@ __all__ = [
     'HighPerformanceKAN', 'BasicKAN', 'create_kan_model', 'create_high_performance_kan',
     'HighPerformanceWavKAN', 'BasicWavKAN', 'create_wavkan_model', 'create_high_performance_wavkan',
     'HighPerformanceICKAN', 'BasicICKAN', 'create_ickan_model', 'create_high_performance_ickan'
-]
-
-__all__ = [
-    'create_kan_model', 'HighPerformanceKAN', 'BasicKAN',
-    'create_wavkan_model', 'HighPerformanceWavKAN', 'BasicWavKAN', 
-    'create_ickan_model', 'HighPerformanceICKAN', 'BasicICKAN'
 ]

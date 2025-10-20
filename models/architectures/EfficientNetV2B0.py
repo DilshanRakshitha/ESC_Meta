@@ -1,8 +1,3 @@
-"""
-EfficientNetV2-B0 Architecture for Audio Classification
-Efficient Neural Networks adapted for spectrograms
-"""
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -10,18 +5,14 @@ from torchvision.models import efficientnet_v2_s
 import warnings
 
 class EfficientNetV2B0(nn.Module):
-    """
-    EfficientNetV2-B0 adapted for audio spectrogram classification
-    """
+
     def __init__(self, num_classes=26, pretrained=True, input_channels=3, dropout_rate=0.2):
         super(EfficientNetV2B0, self).__init__()
         
-        # Load pretrained EfficientNetV2-S (closest to B0)
         if pretrained:
             try:
                 self.backbone = efficientnet_v2_s(pretrained=True)
             except:
-                # Fallback to non-pretrained if pretrained weights not available
                 warnings.warn("Pretrained EfficientNetV2 not available, using random initialization")
                 self.backbone = efficientnet_v2_s(pretrained=False)
         else:
@@ -47,7 +38,6 @@ class EfficientNetV2B0(nn.Module):
                         original_conv.weight.mean(dim=1, keepdim=True)
                     )
         
-        # Get number of features from EfficientNet classifier
         num_features = self.backbone.classifier[1].in_features
         
         # Replace classifier with custom head
@@ -73,7 +63,7 @@ class EfficientNetV2B0(nn.Module):
         return self.backbone(x)
     
     def get_feature_maps(self, x):
-        """Extract feature maps before final classification"""
+        
         x = self.backbone.features(x)
         x = self.backbone.avgpool(x)
         return torch.flatten(x, 1)
@@ -81,8 +71,6 @@ class EfficientNetV2B0(nn.Module):
 
 def create_efficientnet_v2_b0(num_classes=26, pretrained=True, input_channels=3, dropout_rate=0.2):
     """
-    Factory function to create EfficientNetV2-B0 model
-    
     Args:
         num_classes: Number of output classes
         pretrained: Whether to use ImageNet pretrained weights
@@ -98,9 +86,3 @@ def create_efficientnet_v2_b0(num_classes=26, pretrained=True, input_channels=3,
         input_channels=input_channels,
         dropout_rate=dropout_rate
     )
-
-
-# For backward compatibility
-class FSCEfficientNetV2B0(EfficientNetV2B0):
-    """Legacy class name for compatibility"""
-    pass
