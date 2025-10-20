@@ -1,5 +1,6 @@
 """
 Feature Extraction Module for Audio Classification
+currently not used in the main pipeline
 """
 
 import torch
@@ -10,7 +11,6 @@ from typing import Tuple, Optional
 from config.config import FeatureConfig
 
 class BasicAudioFeatureExtractor(nn.Module):
-    """Basic CNN-based audio feature extractor"""
     
     def __init__(self, input_shape: Tuple[int, int, int], feature_dim: int = 128):
         super().__init__()
@@ -30,7 +30,6 @@ class BasicAudioFeatureExtractor(nn.Module):
             nn.AdaptiveAvgPool2d((4, 4))
         )
         
-        # Calculate flattened size
         with torch.no_grad():
             dummy = torch.zeros(1, c, h, w)
             dummy_out = self.features(dummy)
@@ -52,7 +51,6 @@ class BasicAudioFeatureExtractor(nn.Module):
         return x
 
 class AdvancedAudioFeatureExtractor(nn.Module):
-    """Advanced multi-scale audio feature extractor with attention"""
     
     def __init__(self, input_shape: Tuple[int, int, int], config: FeatureConfig):
         super().__init__()
@@ -156,7 +154,6 @@ class AdvancedAudioFeatureExtractor(nn.Module):
         return output
 
 def create_feature_extractor(input_shape: Tuple[int, int, int], config: FeatureConfig) -> nn.Module:
-    """Factory function to create feature extractor based on config"""
     
     if config.extractor_type == "basic":
         return BasicAudioFeatureExtractor(input_shape, config.feature_dim)
