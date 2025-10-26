@@ -8,3 +8,4 @@
 __pycache__/
 /optimization/plots/*
 optimization/optuna_study.db
+ICKAN/

@@ -4,10 +4,15 @@ from models.architectures.AlexNet import AlexNet
 from models.architectures.kan_models import create_high_performance_kan
 from models.architectures.ickan_models import create_high_performance_ickan
 from models.architectures.wavkan_models import create_high_performance_wavkan
+from models.architectures.exact_kan_models import create_exact_kan, create_pure_kan
+from models.architectures.exact_kan_models import create_fast_exact_kan, create_memory_safe_kan
+from models.architectures.exact_ickan_models import create_exact_ickan, create_ickan_model
+from models.architectures.superior_kan_models import create_superior_kan, create_memory_safe_superior_kan
+from models.architectures.rapid_kan_models import create_rapid_kan
 from models.architectures.DenseNet121 import create_densenet121
 from models.architectures.EfficientNetV2B0 import create_efficientnet_v2_b0
 from models.architectures.InceptionV3 import create_inception_v3
-# from models.architectures.ResNet50V2 import create_resnet50_v2, create_resnet18
+from models.architectures.ResNet50V2 import create_resnet50_v2, create_resnet18
 from models.architectures.MobileNetV3Small import create_mobilenet_v3_small, create_mobilenet_v3_large
 
 
@@ -31,13 +36,13 @@ class SimpleModelFactory:
             input_channels = input_shape[0] if len(input_shape) == 3 else 3
             return create_inception_v3(num_classes=num_classes, input_channels=input_channels)
 
-        # elif model_name.lower() == 'resnet50':
-        #     input_channels = input_shape[0] if len(input_shape) == 3 else 3
-        #     return create_resnet50_v2(num_classes=num_classes, input_channels=input_channels)
+        elif model_name.lower() == 'resnet50':
+            input_channels = input_shape[0] if len(input_shape) == 3 else 3
+            return create_resnet50_v2(num_classes=num_classes, input_channels=input_channels)
 
-        # elif model_name.lower() == 'resnet18':
-        #     input_channels = input_shape[0] if len(input_shape) == 3 else 3
-        #     return create_resnet18(num_classes=num_classes, input_channels=input_channels)
+        elif model_name.lower() == 'resnet18':
+            input_channels = input_shape[0] if len(input_shape) == 3 else 3
+            return create_resnet18(num_classes=num_classes, input_channels=input_channels)
 
         elif model_name.lower() == 'mobilenetv3small':
             input_channels = input_shape[0] if len(input_shape) == 3 else 3
@@ -67,6 +72,129 @@ class SimpleModelFactory:
             else:
                 wavkan_input_shape = input_shape
             return create_high_performance_wavkan(wavkan_input_shape, num_classes)
+            
+        elif model_name.lower() == 'exact_kan': # will need a lot of computation
+            if len(input_shape) == 3:  # (C, H, W) -> (H, W, C)
+                exact_kan_input_shape = (input_shape[1], input_shape[2], input_shape[0])
+            else:
+                exact_kan_input_shape = input_shape
+            return create_exact_kan(exact_kan_input_shape, num_classes)
+            
+        elif model_name.lower() == 'pure_kan': # will need a lot of computation
+            if len(input_shape) == 3:  # (C, H, W) -> (H, W, C)
+                pure_kan_input_shape = (input_shape[1], input_shape[2], input_shape[0])
+            else:
+                pure_kan_input_shape = input_shape
+            return create_pure_kan(pure_kan_input_shape, num_classes)
+
+        elif model_name.lower() == 'fast_exact_kan': # 87
+            # Balanced accuracy and regularization
+            if len(input_shape) == 3:
+                fast_input_shape = (input_shape[1], input_shape[2], input_shape[0])
+            else:
+                fast_input_shape = input_shape
+            return create_fast_exact_kan(fast_input_shape, num_classes, mode='balanced')
+            
+        elif model_name.lower() == 'fast_exact_kan_heavy': # 85
+            # High regularization for overfitting
+            if len(input_shape) == 3:
+                fast_input_shape = (input_shape[1], input_shape[2], input_shape[0])
+            else:
+                fast_input_shape = input_shape
+            return create_fast_exact_kan(fast_input_shape, num_classes, mode='regularized')
+            
+        elif model_name.lower() == 'fast_exact_kan_max': # 83 and increasing
+            # Memory-efficient high accuracy (fixed the crash issue)
+            if len(input_shape) == 3:
+                fast_input_shape = (input_shape[1], input_shape[2], input_shape[0])
+            else:
+                fast_input_shape = input_shape
+            return create_fast_exact_kan(fast_input_shape, num_classes, mode='high_accuracy')
+            
+        elif model_name.lower() == 'memory_safe_kan': #89 and increasing
+            # Ultra-safe version that won't crash your system
+            if len(input_shape) == 3:
+                safe_input_shape = (input_shape[1], input_shape[2], input_shape[0])
+            else:
+                safe_input_shape = input_shape
+            return create_memory_safe_kan(safe_input_shape, num_classes, max_memory_gb=6)
+            
+        elif model_name.lower() == 'exact_ickan': # 75
+            if len(input_shape) == 3:  # (C, H, W) -> (H, W, C)
+                exact_ickan_input_shape = (input_shape[1], input_shape[2], input_shape[0])
+            else:
+                exact_ickan_input_shape = input_shape
+            return create_exact_ickan(exact_ickan_input_shape, num_classes, variant="standard")
+            
+        elif model_name.lower() == 'light_ickan': # 67 get overfitted
+            if len(input_shape) == 3:  # (C, H, W) -> (H, W, C)
+                light_ickan_input_shape = (input_shape[1], input_shape[2], input_shape[0])
+            else:
+                light_ickan_input_shape = input_shape
+            return create_exact_ickan(light_ickan_input_shape, num_classes, variant="light")
+            
+        elif model_name.lower() == 'deep_ickan': # 89
+            if len(input_shape) == 3:  # (C, H, W) -> (H, W, C)
+                deep_ickan_input_shape = (input_shape[1], input_shape[2], input_shape[0])
+            else:
+                deep_ickan_input_shape = input_shape
+            return create_exact_ickan(deep_ickan_input_shape, num_classes, variant="deep")
+            
+        elif model_name.lower() == 'superior_kan': # high computation and time
+            # Superior KAN optimized for >90% accuracy
+            if len(input_shape) == 3:  # (C, H, W) -> (H, W, C)
+                superior_input_shape = (input_shape[1], input_shape[2], input_shape[0])
+            else:
+                superior_input_shape = input_shape
+            return create_superior_kan(superior_input_shape, num_classes, performance_mode='high')
+            
+        elif model_name.lower() == 'superior_kan_ultra': # high computation
+            # Ultra-high performance KAN
+            if len(input_shape) == 3:  # (C, H, W) -> (H, W, C)
+                ultra_input_shape = (input_shape[1], input_shape[2], input_shape[0])
+            else:
+                ultra_input_shape = input_shape
+            return create_superior_kan(ultra_input_shape, num_classes, performance_mode='ultra')
+            
+        elif model_name.lower() == 'superior_kan_balanced': #high computation
+            # Balanced Superior KAN
+            if len(input_shape) == 3:  # (C, H, W) -> (H, W, C)
+                balanced_input_shape = (input_shape[1], input_shape[2], input_shape[0])
+            else:
+                balanced_input_shape = input_shape
+            return create_superior_kan(balanced_input_shape, num_classes, performance_mode='balanced')
+            
+        elif model_name.lower() == 'superior_kan_safe': # high computation
+            # Memory-safe Superior KAN
+            if len(input_shape) == 3:  # (C, H, W) -> (H, W, C)
+                safe_input_shape = (input_shape[1], input_shape[2], input_shape[0])
+            else:
+                safe_input_shape = input_shape
+            return create_memory_safe_superior_kan(safe_input_shape, num_classes, max_memory_gb=8)
+            
+        elif model_name.lower() == 'rapid_kan': # 97
+            # Fast-learning KAN optimized for quick convergence
+            if len(input_shape) == 3:  # (C, H, W) -> (H, W, C)
+                rapid_input_shape = (input_shape[1], input_shape[2], input_shape[0])
+            else:
+                rapid_input_shape = input_shape
+            return create_rapid_kan(rapid_input_shape, num_classes, performance='efficient')
+            
+        elif model_name.lower() == 'rapid_kan_lite': # 98
+            # Lightweight fast-learning KAN
+            if len(input_shape) == 3:  # (C, H, W) -> (H, W, C)
+                lite_input_shape = (input_shape[1], input_shape[2], input_shape[0])
+            else:
+                lite_input_shape = input_shape
+            return create_rapid_kan(lite_input_shape, num_classes, performance='lightweight')
+            
+        elif model_name.lower() == 'rapid_kan_power': # 98
+            # Powerful fast-learning KAN
+            if len(input_shape) == 3:  # (C, H, W) -> (H, W, C)
+                power_input_shape = (input_shape[1], input_shape[2], input_shape[0])
+            else:
+                power_input_shape = input_shape
+            return create_rapid_kan(power_input_shape, num_classes, performance='powerful')
             
         else:
             raise ValueError(f"Unknown model: {model_name}")
