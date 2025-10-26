@@ -170,7 +170,7 @@ class SimpleModelFactory:
                 safe_input_shape = (input_shape[1], input_shape[2], input_shape[0])
             else:
                 safe_input_shape = input_shape
-            return create_memory_safe_superior_kan(safe_input_shape, num_classes, max_memory_gb=8)
+            return create_memory_safe_superior_kan(safe_input_shape, num_classes, max_memory_gb=4)
             
         elif model_name.lower() == 'rapid_kan': # 97
             # Fast-learning KAN optimized for quick convergence
