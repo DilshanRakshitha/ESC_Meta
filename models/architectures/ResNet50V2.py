@@ -1,8 +1,3 @@
-"""
-ResNet50V2 and ResNet18 Architectures for Audio Classification
-Implementation of ResNet variants optimized for audio spectrograms
-"""
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -10,13 +5,10 @@ from torchvision.models import resnet50, resnet18
 import warnings
 
 class ResNet50V2(nn.Module):
-    """
-    ResNet50V2 adapted for audio spectrogram classification
-    """
+    
     def __init__(self, num_classes=26, pretrained=True, input_channels=3):
         super(ResNet50V2, self).__init__()
         
-        # Load pretrained ResNet50
         if pretrained:
             self.backbone = resnet50(pretrained=True)
         else:
@@ -37,7 +29,6 @@ class ResNet50V2(nn.Module):
                         original_conv.weight.mean(dim=1, keepdim=True)
                     )
         
-        # Get number of features from ResNet classifier
         num_features = self.backbone.fc.in_features
         
         # Replace classifier
@@ -73,13 +64,10 @@ class ResNet50V2(nn.Module):
 
 
 class ResNet18(nn.Module):
-    """
-    ResNet18 adapted for audio spectrogram classification
-    """
+    
     def __init__(self, num_classes=26, pretrained=True, input_channels=3):
         super(ResNet18, self).__init__()
         
-        # Load pretrained ResNet18
         if pretrained:
             self.backbone = resnet18(pretrained=True)
         else:
@@ -100,7 +88,6 @@ class ResNet18(nn.Module):
                         original_conv.weight.mean(dim=1, keepdim=True)
                     )
         
-        # Get number of features from ResNet classifier
         num_features = self.backbone.fc.in_features
         
         # Replace classifier
@@ -137,8 +124,6 @@ class ResNet18(nn.Module):
 
 def create_resnet50_v2(num_classes=26, pretrained=True, input_channels=3):
     """
-    Factory function to create ResNet50V2 model
-    
     Args:
         num_classes: Number of output classes
         pretrained: Whether to use ImageNet pretrained weights
@@ -156,8 +141,6 @@ def create_resnet50_v2(num_classes=26, pretrained=True, input_channels=3):
 
 def create_resnet18(num_classes=26, pretrained=True, input_channels=3):
     """
-    Factory function to create ResNet18 model
-    
     Args:
         num_classes: Number of output classes
         pretrained: Whether to use ImageNet pretrained weights
@@ -171,14 +154,3 @@ def create_resnet18(num_classes=26, pretrained=True, input_channels=3):
         pretrained=pretrained,
         input_channels=input_channels
     )
-
-
-# For backward compatibility
-class FSCResNet50V2(ResNet50V2):
-    """Legacy class name for compatibility"""
-    pass
-
-
-class FSCResNet18(ResNet18):
-    """Legacy class name for compatibility"""
-    pass
