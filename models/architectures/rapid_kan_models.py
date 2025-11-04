@@ -26,7 +26,7 @@ class FastLearningKANLinear(KANLinear):
         base_activation=torch.nn.SiLU,
         grid_eps=0.01,
         grid_range=[-2, 2],      # Moderate range
-        prob_update_grid=0.05,   # Less frequent but more stable updates
+        prob_update_grid=-0.001,  # Disable grid updates for stability (like exact KAN)
         learning_rate_multiplier=1.0
     ):
         self.learning_rate_multiplier = learning_rate_multiplier
@@ -134,7 +134,7 @@ class RapidESC_KAN(torch.nn.Module):
                 grid_size=grid_size,
                 scale_base=2.5,      # Strong base for faster learning
                 scale_spline=1.2,    # Moderate spline contribution
-                prob_update_grid=0.03,  # Conservative grid updates
+                prob_update_grid=-0.001,  # Disable for stability
                 learning_rate_multiplier=2.0 if i < len(layers_hidden) - 2 else 1.0
             )
             

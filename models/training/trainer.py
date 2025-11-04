@@ -55,7 +55,7 @@ class SimpleModelTrainer:
     
     def __init__(self, 
                  model: nn.Module,
-                 device: str = 'cuda' if torch.cuda.is_available() else 'cpu',
+                 device: str = 'cpu',  # Default to CPU for stability
                  model_name: str = 'model'):
         """
         Args:
