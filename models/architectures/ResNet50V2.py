@@ -1,156 +1,262 @@
+"""
+ResNet50V2 Model Architecture for FSC
+Based on ResNet v2 architecture with pre-activation
+Adapted for audio spectrogram classification
+"""
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchvision.models import resnet50, resnet18
-import warnings
+from typing import Optional, Tuple
+import logging
 
-class ResNet50V2(nn.Module):
+logger = logging.getLogger(__name__)
+
+
+class PreActBottleneck(nn.Module):
+    """Pre-activation Bottleneck block for ResNet v2"""
+    expansion = 4
     
-    def __init__(self, num_classes=26, pretrained=True, input_channels=3):
-        super(ResNet50V2, self).__init__()
+    def __init__(self, in_channels, out_channels, stride=1, downsample=None):
+        super(PreActBottleneck, self).__init__()
         
-        if pretrained:
-            self.backbone = resnet50(pretrained=True)
-        else:
-            self.backbone = resnet50(pretrained=False)
+        # Pre-activation
+        self.bn1 = nn.BatchNorm2d(in_channels)
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False)
         
-        # Modify first layer if input channels != 3
-        if input_channels != 3:
-            original_conv = self.backbone.conv1
-            self.backbone.conv1 = nn.Conv2d(
-                input_channels, 64, kernel_size=7, stride=2, padding=3, bias=False
-            )
-            
-            # Initialize new conv layer
-            if pretrained and input_channels == 1:
-                # For grayscale, use mean of RGB weights
-                with torch.no_grad():
-                    self.backbone.conv1.weight = nn.Parameter(
-                        original_conv.weight.mean(dim=1, keepdim=True)
-                    )
+        self.bn2 = nn.BatchNorm2d(out_channels)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, 
+                               stride=stride, padding=1, bias=False)
         
-        num_features = self.backbone.fc.in_features
+        self.bn3 = nn.BatchNorm2d(out_channels)
+        self.conv3 = nn.Conv2d(out_channels, out_channels * self.expansion, 
+                               kernel_size=1, bias=False)
         
-        # Replace classifier
-        self.backbone.fc = nn.Sequential(
-            nn.Dropout(0.5),
-            nn.Linear(num_features, 512),
-            nn.ReLU(inplace=True),
-            nn.Dropout(0.3),
-            nn.Linear(512, num_classes)
-        )
-        
-        # Store configuration
-        self.num_classes = num_classes
-        self.input_channels = input_channels
+        self.downsample = downsample
         
     def forward(self, x):
-        return self.backbone(x)
+        identity = x
+        
+        # Pre-activation
+        out = F.relu(self.bn1(x))
+        out = self.conv1(out)
+        
+        out = F.relu(self.bn2(out))
+        out = self.conv2(out)
+        
+        out = F.relu(self.bn3(out))
+        out = self.conv3(out)
+        
+        if self.downsample is not None:
+            identity = self.downsample(x)
+        
+        out += identity
+        return out
+
+
+class ResNet50V2(nn.Module):
+    """ResNet50 v2 with pre-activation for audio classification"""
     
-    def get_feature_maps(self, x):
-        """Extract feature maps before final classification"""
-        x = self.backbone.conv1(x)
-        x = self.backbone.bn1(x)
-        x = self.backbone.relu(x)
-        x = self.backbone.maxpool(x)
+    def __init__(self, input_channels=3, num_classes=26, dropout_rate=0.2):
+        super(ResNet50V2, self).__init__()
         
-        x = self.backbone.layer1(x)
-        x = self.backbone.layer2(x)
-        x = self.backbone.layer3(x)
-        x = self.backbone.layer4(x)
+        self.input_channels = input_channels
+        self.num_classes = num_classes
+        self.dropout_rate = dropout_rate
         
-        x = self.backbone.avgpool(x)
-        return x.flatten(1)
+        # Initial convolution (no pre-activation for first layer)
+        self.conv1 = nn.Conv2d(input_channels, 64, kernel_size=7, stride=2, 
+                               padding=3, bias=False)
+        self.bn1 = nn.BatchNorm2d(64)
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        
+        # ResNet layers
+        self.layer1 = self._make_layer(64, 64, 3, stride=1)
+        self.layer2 = self._make_layer(256, 128, 4, stride=2)
+        self.layer3 = self._make_layer(512, 256, 6, stride=2)
+        self.layer4 = self._make_layer(1024, 512, 3, stride=2)
+        
+        # Global average pooling and classifier
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.dropout = nn.Dropout(dropout_rate)
+        self.fc = nn.Linear(2048, num_classes)
+        
+        self._initialize_weights()
+        
+    def _make_layer(self, in_channels, out_channels, blocks, stride):
+        """Create a layer with multiple bottleneck blocks"""
+        downsample = None
+        if stride != 1 or in_channels != out_channels * PreActBottleneck.expansion:
+            downsample = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels * PreActBottleneck.expansion,
+                         kernel_size=1, stride=stride, bias=False),
+            )
+        
+        layers = []
+        layers.append(PreActBottleneck(in_channels, out_channels, stride, downsample))
+        
+        in_channels = out_channels * PreActBottleneck.expansion
+        for _ in range(1, blocks):
+            layers.append(PreActBottleneck(in_channels, out_channels))
+        
+        return nn.Sequential(*layers)
+    
+    def _initialize_weights(self):
+        """Initialize model weights"""
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                nn.init.normal_(m.weight, 0, 0.01)
+                nn.init.constant_(m.bias, 0)
+    
+    def forward(self, x):
+        # Initial convolution
+        x = self.conv1(x)
+        x = F.relu(self.bn1(x))
+        x = self.maxpool(x)
+        
+        # ResNet layers
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+        
+        # Final pooling and classification
+        x = self.avgpool(x)
+        x = torch.flatten(x, 1)
+        x = self.dropout(x)
+        x = self.fc(x)
+        
+        return x
+
+
+class BasicBlock(nn.Module):
+    """Basic block for ResNet18"""
+    expansion = 1
+    
+    def __init__(self, in_channels, out_channels, stride=1, downsample=None):
+        super(BasicBlock, self).__init__()
+        
+        self.bn1 = nn.BatchNorm2d(in_channels)
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, 
+                               stride=stride, padding=1, bias=False)
+        
+        self.bn2 = nn.BatchNorm2d(out_channels)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, 
+                               padding=1, bias=False)
+        
+        self.downsample = downsample
+        
+    def forward(self, x):
+        identity = x
+        
+        out = F.relu(self.bn1(x))
+        out = self.conv1(out)
+        
+        out = F.relu(self.bn2(out))
+        out = self.conv2(out)
+        
+        if self.downsample is not None:
+            identity = self.downsample(x)
+        
+        out += identity
+        return out
 
 
 class ResNet18(nn.Module):
+    """ResNet18 for audio classification"""
     
-    def __init__(self, num_classes=26, pretrained=True, input_channels=3):
+    def __init__(self, input_channels=3, num_classes=26, dropout_rate=0.2):
         super(ResNet18, self).__init__()
         
-        if pretrained:
-            self.backbone = resnet18(pretrained=True)
-        else:
-            self.backbone = resnet18(pretrained=False)
-        
-        # Modify first layer if input channels != 3
-        if input_channels != 3:
-            original_conv = self.backbone.conv1
-            self.backbone.conv1 = nn.Conv2d(
-                input_channels, 64, kernel_size=7, stride=2, padding=3, bias=False
-            )
-            
-            # Initialize new conv layer
-            if pretrained and input_channels == 1:
-                # For grayscale, use mean of RGB weights
-                with torch.no_grad():
-                    self.backbone.conv1.weight = nn.Parameter(
-                        original_conv.weight.mean(dim=1, keepdim=True)
-                    )
-        
-        num_features = self.backbone.fc.in_features
-        
-        # Replace classifier
-        self.backbone.fc = nn.Sequential(
-            nn.Dropout(0.5),
-            nn.Linear(num_features, 256),
-            nn.ReLU(inplace=True),
-            nn.Dropout(0.3),
-            nn.Linear(256, num_classes)
-        )
-        
-        # Store configuration
-        self.num_classes = num_classes
         self.input_channels = input_channels
+        self.num_classes = num_classes
+        self.dropout_rate = dropout_rate
         
+        # Initial convolution
+        self.conv1 = nn.Conv2d(input_channels, 64, kernel_size=7, stride=2, 
+                               padding=3, bias=False)
+        self.bn1 = nn.BatchNorm2d(64)
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        
+        # ResNet layers
+        self.layer1 = self._make_layer(64, 64, 2, stride=1)
+        self.layer2 = self._make_layer(64, 128, 2, stride=2)
+        self.layer3 = self._make_layer(128, 256, 2, stride=2)
+        self.layer4 = self._make_layer(256, 512, 2, stride=2)
+        
+        # Global average pooling and classifier
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.dropout = nn.Dropout(dropout_rate)
+        self.fc = nn.Linear(512, num_classes)
+        
+        self._initialize_weights()
+        
+    def _make_layer(self, in_channels, out_channels, blocks, stride):
+        """Create a layer with multiple basic blocks"""
+        downsample = None
+        if stride != 1 or in_channels != out_channels:
+            downsample = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, kernel_size=1, 
+                         stride=stride, bias=False),
+            )
+        
+        layers = []
+        layers.append(BasicBlock(in_channels, out_channels, stride, downsample))
+        
+        for _ in range(1, blocks):
+            layers.append(BasicBlock(out_channels, out_channels))
+        
+        return nn.Sequential(*layers)
+    
+    def _initialize_weights(self):
+        """Initialize model weights"""
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                nn.init.normal_(m.weight, 0, 0.01)
+                nn.init.constant_(m.bias, 0)
+    
     def forward(self, x):
-        return self.backbone(x)
-    
-    def get_feature_maps(self, x):
-        """Extract feature maps before final classification"""
-        x = self.backbone.conv1(x)
-        x = self.backbone.bn1(x)
-        x = self.backbone.relu(x)
-        x = self.backbone.maxpool(x)
+        # Initial convolution
+        x = self.conv1(x)
+        x = F.relu(self.bn1(x))
+        x = self.maxpool(x)
         
-        x = self.backbone.layer1(x)
-        x = self.backbone.layer2(x)
-        x = self.backbone.layer3(x)
-        x = self.backbone.layer4(x)
+        # ResNet layers
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
         
-        x = self.backbone.avgpool(x)
-        return x.flatten(1)
+        # Final pooling and classification
+        x = self.avgpool(x)
+        x = torch.flatten(x, 1)
+        x = self.dropout(x)
+        x = self.fc(x)
+        
+        return x
 
 
-def create_resnet50_v2(num_classes=26, pretrained=True, input_channels=3):
-    """
-    Args:
-        num_classes: Number of output classes
-        pretrained: Whether to use ImageNet pretrained weights
-        input_channels: Number of input channels (1 for grayscale, 3 for RGB)
-    
-    Returns:
-        ResNet50V2 model
-    """
-    return ResNet50V2(
-        num_classes=num_classes,
-        pretrained=pretrained,
-        input_channels=input_channels
-    )
+def create_resnet50_v2(num_classes=26, input_channels=3, dropout_rate=0.2):
+    """Create ResNet50 v2 model"""
+    logger.info(f"Creating ResNet50 v2 with {num_classes} classes, "
+                f"{input_channels} input channels, dropout={dropout_rate}")
+    return ResNet50V2(input_channels=input_channels, num_classes=num_classes, 
+                      dropout_rate=dropout_rate)
 
 
-def create_resnet18(num_classes=26, pretrained=True, input_channels=3):
-    """
-    Args:
-        num_classes: Number of output classes
-        pretrained: Whether to use ImageNet pretrained weights
-        input_channels: Number of input channels (1 for grayscale, 3 for RGB)
-    
-    Returns:
-        ResNet18 model
-    """
-    return ResNet18(
-        num_classes=num_classes,
-        pretrained=pretrained,
-        input_channels=input_channels
-    )
+def create_resnet18(num_classes=26, input_channels=3, dropout_rate=0.2):
+    """Create ResNet18 model"""
+    logger.info(f"Creating ResNet18 with {num_classes} classes, "
+                f"{input_channels} input channels, dropout={dropout_rate}")
+    return ResNet18(input_channels=input_channels, num_classes=num_classes, 
+                    dropout_rate=dropout_rate)
