@@ -16,19 +16,25 @@ except ImportError as e:
 
 # KAN-based Models
 try:
-    from .kan_models import create_kan_model, HighPerformanceKAN, BasicKAN, create_high_performance_kan
+    from .kan_models import create_kan_model, create_high_performance_kan
+    print("✅ KAN models imported")
 except ImportError as e:
     print(f"Warning: Could not import KAN models: {e}")
-    create_kan_model = HighPerformanceKAN = BasicKAN = create_high_performance_kan = None
+    create_kan_model = create_high_performance_kan = None
 
 try:
-    from .wavkan_models import create_wavkan_model, HighPerformanceWavKAN, BasicWavKAN, create_high_performance_wavkan  
+    from .wavkan_models import create_wavkan_model, create_high_performance_wavkan
+    print("✅ WavKAN models imported")
 except ImportError as e:
     print(f"Warning: Could not import WavKAN models: {e}")
-    create_wavkan_model = HighPerformanceWavKAN = BasicWavKAN = create_high_performance_wavkan = None
+    create_wavkan_model = create_high_performance_wavkan = None
 
 try:
-    from .ickan_models import create_ickan_model, HighPerformanceICKAN, BasicICKAN, create_high_performance_ickan
+    from .ickan_models import create_ickan_model, create_high_performance_ickan
+    print("✅ ICKAN models imported")
+except ImportError as e:
+    print(f"Warning: Could not import ICKAN models: {e}")
+    create_ickan_model = create_high_performance_ickan = None
 except ImportError as e:
     print(f"Warning: Could not import ICKAN models: {e}")
     create_ickan_model = HighPerformanceICKAN = BasicICKAN = create_high_performance_ickan = None

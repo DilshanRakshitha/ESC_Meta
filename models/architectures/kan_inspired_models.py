@@ -7,13 +7,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from typing import Tuple, Optional, Dict, Any
-
-# Define ModelConfig locally to avoid circular imports
-class ModelConfig:
-    def __init__(self, **kwargs):
-        for key, value in kwargs.items():
-            setattr(self, key, value)
+from typing import Tuple
+from config.config import ModelConfig
 
 class ResidualKANBlock(nn.Module):
     """Residual block with KAN-inspired nonlinearities"""
