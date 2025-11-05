@@ -27,13 +27,12 @@ class DataPreprocessor:
         self.data_path = Path(data_path)
         
     def prepare_fsc22_data(self, cache: bool = True) -> Tuple[List, List]:
-        """Load and prepare FSC22 dataset"""
+        """Load and prepare FSC22 dataset - FIXED: No data leakage"""
         print(f"Loading FSC22 data from {self.data_path}")
         
-        features = []
-        labels = []
+        # Load each fold separately to prevent data leakage
+        all_folds_data = {}
         
-        # Try to load from all available folds
         for fold in range(1, 6):
             fold_file = self.data_path / f"aug_ts_ps_mel_features_5_20_fold{fold}"
             
@@ -41,26 +40,9 @@ class DataPreprocessor:
                 try:
                     with open(fold_file, 'rb') as f:
                         fold_data = pickle.load(f)
-                        
-                    # Extract features and labels from fold
-                    if isinstance(fold_data, dict):
-                        if 'features' in fold_data and 'labels' in fold_data:
-                            features.extend(fold_data['features'])
-                            labels.extend(fold_data['labels'])
-                        else:
-                            # Try different key formats
-                            for key in fold_data.keys():
-                                if 'feature' in key.lower():
-                                    features.extend(fold_data[key])
-                                elif 'label' in key.lower():
-                                    labels.extend(fold_data[key])
-                    elif isinstance(fold_data, list):
-                        # Assume it's a list of [features, labels] pairs
-                        for item in fold_data:
-                            if len(item) == 2:
-                                features.append(item[0])
-                                labels.append(item[1])
                     
+                    # Store fold data separately
+                    all_folds_data[fold] = fold_data
                     print(f"Loaded fold {fold}: {len(fold_data)} samples")
                     
                 except Exception as e:
@@ -69,16 +51,12 @@ class DataPreprocessor:
             else:
                 print(f"Fold {fold} file not found: {fold_file}")
         
-        print(f"Total loaded: {len(features)} samples, {len(labels)} labels")
+        # For cross-validation, we return fold data instead of combined data
+        # This prevents data leakage by keeping folds separate
+        print(f"✅ Loaded {len(all_folds_data)} folds successfully")
+        print(f"⚠️  Note: Returning fold structure for proper cross-validation")
         
-        # Convert to numpy arrays if needed
-        if len(features) > 0:
-            if not isinstance(features[0], np.ndarray):
-                features = [np.array(f) for f in features]
-            if not isinstance(labels[0], np.ndarray):
-                labels = [np.array(l) if not isinstance(l, (int, float)) else l for l in labels]
-        
-        return features, labels
+        return all_folds_data, None  # Return fold structure, not combined data
     
     def preprocess_features(self, features: List[np.ndarray], 
                           target_shape: Optional[Tuple] = None) -> List[np.ndarray]:

@@ -682,6 +682,131 @@ class FSCCrossValidator:
         print(f"Mean Accuracy: {mean_acc:.2f}% ± {std_acc:.2f}%")
         print("=" * 80)
         
+    def run_kfold_training_with_folds(self, folds_data, n_splits=5):
+        """
+        Run k-fold cross-validation using pre-separated fold data to prevent data leakage
+        
+        Args:
+            folds_data: Dict containing fold data {fold_num: [(feature, label), ...]}
+            n_splits: Number of folds (should match number of folds in data)
+        """
+        print(f"\n{'='*80}")
+        print("5-FOLD CROSS VALIDATION - NO DATA LEAKAGE")
+        print(f"Available folds: {list(folds_data.keys())}")
+        print(f"Folds: {n_splits}")
+        print(f"{'='*80}")
+        
+        fold_results = []
+        available_folds = list(folds_data.keys())
+        
+        if len(available_folds) != n_splits:
+            print(f"Warning: Expected {n_splits} folds, but got {len(available_folds)}")
+            n_splits = min(n_splits, len(available_folds))
+        
+        for fold_num in range(1, n_splits + 1):
+            print(f"\nProcessing Fold {fold_num}/{n_splits}")
+            
+            # Use current fold as validation, others as training
+            val_fold = fold_num
+            train_folds = [f for f in available_folds if f != val_fold]
+            
+            # Prepare training data from multiple folds
+            train_features = []
+            train_labels = []
+            
+            for train_fold in train_folds:
+                if train_fold in folds_data:
+                    fold_data = folds_data[train_fold]
+                    for item in fold_data:
+                        if len(item) == 2:
+                            train_features.append(item[0])
+                            train_labels.append(item[1])
+            
+            # Prepare validation data from single fold
+            val_features = []
+            val_labels = []
+            
+            if val_fold in folds_data:
+                fold_data = folds_data[val_fold]
+                for item in fold_data:
+                    if len(item) == 2:
+                        val_features.append(item[0])
+                        val_labels.append(item[1])
+            
+            # Convert to numpy arrays
+            train_features = np.array(train_features)
+            train_labels = np.array(train_labels)
+            val_features = np.array(val_features)
+            val_labels = np.array(val_labels)
+            
+            # Check if we need to transpose for CNN models (non-KAN models)
+            model_name = type(self.model).__name__.lower()
+            is_kan_model = 'kan' in model_name
+            
+            if len(train_features.shape) == 4 and train_features.shape[-1] == 3 and not is_kan_model:
+                # CNN models expect (batch, channels, height, width) format
+                print(f"   Transposing features from {train_features.shape} to CNN format...")
+                train_features = np.transpose(train_features, (0, 3, 1, 2))  # (B,H,W,C) -> (B,C,H,W)
+                val_features = np.transpose(val_features, (0, 3, 1, 2))
+                print(f"   New training shape: {train_features.shape}")
+            elif is_kan_model:
+                print(f"   Keeping original format for KAN model: {train_features.shape}")
+            
+            print(f"   Train: {len(train_features)} samples, Val: {len(val_features)} samples")
+            print(f"   Training folds: {train_folds}, Validation fold: {val_fold}")
+            
+            # Create data loaders
+            train_dataset = TensorDataset(
+                torch.tensor(train_features, dtype=torch.float32),
+                torch.tensor(train_labels, dtype=torch.long)
+            )
+            val_dataset = TensorDataset(
+                torch.tensor(val_features, dtype=torch.float32),
+                torch.tensor(val_labels, dtype=torch.long)
+            )
+            
+            train_loader = DataLoader(
+                train_dataset,
+                batch_size=64,
+                shuffle=True, 
+                num_workers=4,
+                pin_memory=True if self.device.type == 'cuda' else False
+            )
+            val_loader = DataLoader(
+                val_dataset, 
+                batch_size=64, 
+                shuffle=False, 
+                num_workers=4,
+                pin_memory=True if self.device.type == 'cuda' else False
+            )
+            
+            # Create fresh model for this fold
+            model = self.model_creator_func()
+            
+            # Train the fold
+            trainer = FSCTrainer(model, self.device, fold_num)
+            fold_result = trainer.train_fold(train_loader, val_loader)
+            
+            fold_results.append({
+                'fold': fold_num,
+                'train_folds': train_folds,
+                'val_fold': val_fold,
+                **fold_result
+            })
+        
+        # Calculate final results
+        val_accuracies = [result['best_val_acc'] for result in fold_results]
+        mean_acc = np.mean(val_accuracies)
+        std_acc = np.std(val_accuracies)
+        
+        print("\n" + "=" * 80)
+        print("CROSS-VALIDATION COMPLETED - NO DATA LEAKAGE!")
+        print(f"Results Summary:")
+        for i, (acc, result) in enumerate(zip(val_accuracies, fold_results), 1):
+            print(f"   Fold {i}: {acc:.2f}% (Val fold: {result['val_fold']})")
+        print(f"Mean Accuracy: {mean_acc:.2f}% ± {std_acc:.2f}%")
+        print("=" * 80)
+        
         return {
             'fold_results': fold_results,
             'mean_accuracy': mean_acc,

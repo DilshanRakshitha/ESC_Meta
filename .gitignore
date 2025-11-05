@@ -9,3 +9,5 @@ __pycache__/
 /optimization/plots/*
 optimization/optuna_study.db
 ICKAN/
+Forest-Sound-Analysis-on-Edge-main/
+data_copy/

@@ -6,6 +6,8 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 
+# Global variable to store fold data for proper cross-validation
+_folds_data_cache = None
 
 from models.training.trainer import FSCCrossValidator
 from utils.data_prep import DataPreprocessor
@@ -157,24 +159,54 @@ def run_basic_training(model_name: str):
     return model
 
 def load_fsc22_data(model_name: str = None):
-    """Load real FSC22 dataset with proper format for the model type"""
+    """Load real FSC22 dataset with proper fold separation to prevent data leakage"""
     print("📂 Loading FSC22 dataset...")
     
     data_path = "/home/dilshan/Documents/ESC/temp1/ESC_Meta/data/fsc22/Pickle_Files/aug_ts_ps_mel_features_5_20"
     
     try:
-        # Use DataPreprocessor to load FSC22 data
+        # Use DataPreprocessor to load FSC22 data with proper fold separation
         preprocessor = DataPreprocessor(data_path)
-        features, labels = preprocessor.prepare_fsc22_data()
+        folds_data, _ = preprocessor.prepare_fsc22_data()
+        
+        if not folds_data:
+            print("❌ No fold data loaded!")
+            return None, None
+        
+        # Extract features and labels from the first fold for getting structure info
+        first_fold_data = list(folds_data.values())[0]
+        
+        # Extract features and labels from fold data
+        if isinstance(first_fold_data, list) and len(first_fold_data) > 0:
+            if len(first_fold_data[0]) == 2:
+                # Format: [[feature, label], [feature, label], ...]
+                sample_feature = first_fold_data[0][0]
+                sample_label = first_fold_data[0][1]
+            else:
+                print("❌ Unexpected fold data format")
+                return None, None
+        else:
+            print("❌ Empty or invalid fold data")
+            return None, None
+        
+        # Combine all folds for shape/class info only (for model creation)
+        # The actual cross-validation will use separate folds
+        all_features = []
+        all_labels = []
+        
+        for fold_num, fold_data in folds_data.items():
+            for item in fold_data:
+                if len(item) == 2:
+                    all_features.append(item[0])
+                    all_labels.append(item[1])
         
         # Convert to numpy arrays
-        if isinstance(features, list):
-            features = np.array(features)
-        if isinstance(labels, list):
-            labels = np.array(labels)
+        features = np.array(all_features)
+        labels = np.array(all_labels)
         
         # Handle data format based on model type
-        is_kan_model = model_name and model_name.lower() in ['kan', 'ickan', 'wavkan', 'exact_kan', 'exact_ickan']
+        is_kan_model = model_name and any(kan_type in model_name.lower() 
+                                        for kan_type in ['kan', 'ickan', 'wavkan', 'exact_kan', 'exact_ickan'])
         
         if len(features.shape) == 4 and features.shape[-1] == 3:
             if is_kan_model:
@@ -190,6 +222,11 @@ def load_fsc22_data(model_name: str = None):
         print(f"📊 Features shape: {features.shape}")
         print(f"📊 Labels shape: {labels.shape}")
         print(f"📊 Number of classes: {len(np.unique(labels))}")
+        print(f"🔒 Fold structure preserved for proper cross-validation")
+        
+        # Store fold structure in a global variable for cross-validation
+        global _folds_data_cache
+        _folds_data_cache = folds_data
         
         return features, labels
         
@@ -329,7 +366,13 @@ def run_fsc22_cross_validation(model_name: str, n_folds: int = 5, cuda: bool = F
     )
     
     try:
-        results = cv_trainer.run_kfold_training(features, labels, n_splits=n_folds)
+        # Use the new fold-based cross-validation method to prevent data leakage
+        global _folds_data_cache
+        if _folds_data_cache is None:
+            print("❌ No fold data available for proper cross-validation")
+            return None
+            
+        results = cv_trainer.run_kfold_training_with_folds(_folds_data_cache, n_splits=n_folds)
         
         print(f"\n{model_name.upper()} - FSC22 5-Fold Cross-Validation Results:")
         print("=" * 70)
