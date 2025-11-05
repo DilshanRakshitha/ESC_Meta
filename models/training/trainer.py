@@ -740,8 +740,11 @@ class FSCCrossValidator:
             val_labels = np.array(val_labels)
             
             # Check if we need to transpose for CNN models (non-KAN models)
-            model_name = type(self.model).__name__.lower()
+            # Create a sample model to check the type
+            sample_model = self.model_creator_func()
+            model_name = type(sample_model).__name__.lower()
             is_kan_model = 'kan' in model_name
+            del sample_model  # Clean up
             
             if len(train_features.shape) == 4 and train_features.shape[-1] == 3 and not is_kan_model:
                 # CNN models expect (batch, channels, height, width) format
