@@ -4,10 +4,9 @@ from models.architectures.AlexNet import AlexNet
 from models.architectures.kan_models import create_high_performance_kan
 from models.architectures.ickan_models import create_high_performance_ickan
 from models.architectures.wavkan_models import create_high_performance_wavkan
-from models.architectures.exact_kan_models import create_exact_kan, create_pure_kan
+from models.architectures.exact_kan_models import create_exact_kan
 from models.architectures.exact_kan_models import create_fast_exact_kan, create_memory_safe_kan
 from models.architectures.exact_ickan_models import create_exact_ickan, create_ickan_model
-from models.architectures.superior_kan_models import create_superior_kan, create_memory_safe_superior_kan
 from models.architectures.rapid_kan_models import create_rapid_kan
 from models.architectures.DenseNet121 import create_densenet121
 from models.architectures.EfficientNetV2B0 import create_efficientnet_v2_b0
@@ -79,13 +78,6 @@ class SimpleModelFactory:
             else:
                 exact_kan_input_shape = input_shape
             return create_exact_kan(exact_kan_input_shape, num_classes)
-            
-        elif model_name.lower() == 'pure_kan': # will need a lot of computation
-            if len(input_shape) == 3:  # (C, H, W) -> (H, W, C)
-                pure_kan_input_shape = (input_shape[1], input_shape[2], input_shape[0])
-            else:
-                pure_kan_input_shape = input_shape
-            return create_pure_kan(pure_kan_input_shape, num_classes)
 
         elif model_name.lower() == 'fast_exact_kan': # 87
             # Balanced accuracy and regularization

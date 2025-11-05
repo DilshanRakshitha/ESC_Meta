@@ -333,10 +333,6 @@ class ESC_KAN(torch.nn.Module):
 def create_exact_kan(input_shape, num_classes=26, hidden_layers=[512, 256]):
     return ESC_KAN(input_shape, num_classes, hidden_layers)
 
-# Similar to the original implementation
-def create_pure_kan(input_shape, num_classes=26):
-    return ESC_KAN(input_shape, num_classes, [512, 256])
-
 
 class FastESC_KAN(torch.nn.Module):
     """

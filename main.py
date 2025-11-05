@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-"""
-ESC Meta - Complete Working Main Pipeline
-Clean implementation with all available models
-Bypasses problematic imports for stability
-"""
-
 import os
 import sys
 import argparse
@@ -13,227 +6,101 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 
-print("🎵 FSC META - COMPLETE MAIN PIPELINE")
-print("🔗 Direct imports for maximum compatibility")
 
-# Import cross-validation trainer for real FSC22 training
-try:
-    from models.training.trainer import FSCCrossValidator
-    from utils.data_prep import DataPreprocessor
-    print("✅ Cross-validation trainer imported")
-    CV_TRAINER_AVAILABLE = True
-except ImportError as e:
-    print(f"⚠️ Cross-validation trainer not available: {e}")
-    CV_TRAINER_AVAILABLE = False
-
-def create_simple_cnn(input_channels=3, num_classes=26):
-    """Create a simple CNN that always works"""
-    return nn.Sequential(
-        nn.Conv2d(input_channels, 32, 3, padding=1),
-        nn.ReLU(),
-        nn.MaxPool2d(2),
-        nn.Conv2d(32, 64, 3, padding=1),
-        nn.ReLU(),
-        nn.MaxPool2d(2),
-        nn.AdaptiveAvgPool2d((4, 4)),
-        nn.Flatten(),
-        nn.Linear(64 * 16, 128),
-        nn.ReLU(),
-        nn.Dropout(0.5),
-        nn.Linear(128, num_classes)
-    )
+from models.training.trainer import FSCCrossValidator
+from utils.data_prep import DataPreprocessor
 
 def create_model(model_name: str):
-    """Create model by name with direct imports - Complete Architecture Collection"""
     model_name = model_name.lower()
-    input_shape = (128, 196, 3)  # Standard ESC input shape (H, W, C)
+    input_shape = (128, 196, 3)
     
     # ========== CNN ARCHITECTURES ==========
-    if model_name in ['alexnet', 'alex']:
+    if model_name == 'alexnet' :
         from models.architectures.AlexNet import AlexNet
         return AlexNet(input_size=3, num_classes=26)
     
-    elif model_name in ['densenet', 'densenet121']:
+    elif model_name == 'densenet' :
         from models.architectures.DenseNet121 import create_densenet121
         return create_densenet121(num_classes=26, input_channels=3)
     
-    elif model_name in ['efficientnet', 'efficientnetv2', 'efficientnetv2b0']:
+    elif model_name == 'efficientnet' :
         from models.architectures.EfficientNetV2B0 import create_efficientnet_v2_b0
         return create_efficientnet_v2_b0(num_classes=26, input_channels=3)
-    
-    elif model_name in ['inception', 'inceptionv3']:
+
+    elif model_name == 'inception':
         from models.architectures.InceptionV3 import create_inception_v3
         return create_inception_v3(num_classes=26, input_channels=3, pretrained=False)
-    
-    elif model_name in ['mobilenet', 'mobilenetv3', 'mobilenetv3small']:
+
+    elif model_name == 'mobilenet':
         from models.architectures.MobileNetV3Small import create_mobilenet_v3_small
         return create_mobilenet_v3_small(num_classes=26, input_channels=3)
     
-    elif model_name in ['mobilenetv3large']:
+    elif model_name == 'mobilenetv3large' :
         from models.architectures.MobileNetV3Small import create_mobilenet_v3_large
         return create_mobilenet_v3_large(num_classes=26, input_channels=3)
     
-    elif model_name in ['resnet', 'resnet50', 'resnet50v2']:
+    elif model_name == 'resnet' or model_name == 'resnet50' :
         from models.architectures.ResNet50V2 import create_resnet50_v2
         return create_resnet50_v2(num_classes=26, input_channels=3)
     
-    elif model_name in ['resnet18']:
+    elif model_name == 'resnet18' :
         from models.architectures.ResNet50V2 import create_resnet18
         return create_resnet18(num_classes=26, input_channels=3)
     
     # ========== KAN-INSPIRED ARCHITECTURES (Fast, CNN-based) ==========
-    elif model_name in ['kan_inspired', 'kan_fast']:
+    elif model_name == 'kan_inspired' :
         from models.architectures.kan_models import create_high_performance_kan
         return create_high_performance_kan(input_shape, 26)
     
-    elif model_name in ['ickan_inspired', 'ickan_fast']:
+    elif model_name == 'ickan_inspired' :
         from models.architectures.ickan_models import create_high_performance_ickan
         return create_high_performance_ickan(input_shape, 26)
     
-    elif model_name in ['wavkan_inspired', 'wavkan_fast']:
+    elif model_name == 'wavkan_inspired' :
         from models.architectures.wavkan_models import create_high_performance_wavkan
         return create_high_performance_wavkan(input_shape, 26)
     
     # ========== TRUE KAN ARCHITECTURES (Exact implementations) ==========
-    # Exact KAN models (heavy computation)
-    elif model_name in ['kan', 'exact_kan']:
+    elif model_name == 'kan' :
         from models.architectures.exact_kan_models import create_exact_kan
         return create_exact_kan(input_shape, 26)
     
-    elif model_name in ['kan_pure', 'pure_kan']:
-        from models.architectures.exact_kan_models import create_pure_kan
-        return create_pure_kan(input_shape, 26)
-    
-    elif model_name in ['kan_fast_exact', 'fast_kan']:
+    elif model_name == 'kan_fast' :
         from models.architectures.exact_kan_models import create_fast_exact_kan
         return create_fast_exact_kan(input_shape, 26, mode='balanced')
     
-    elif model_name in ['kan_memory_safe', 'memory_safe_kan']:
+    elif model_name == 'kan_memory_safe' :
         from models.architectures.exact_kan_models import create_memory_safe_kan
         return create_memory_safe_kan(input_shape, 26, max_memory_gb=6)
     
     # Exact ICKAN models
-    elif model_name in ['ickan', 'exact_ickan']:
+    elif model_name == 'ickan' :
         from models.architectures.exact_ickan_models import create_exact_ickan
         return create_exact_ickan(input_shape, 26, variant="standard")
     
-    elif model_name in ['ickan_light', 'light_ickan']:
+    elif model_name == 'ickan_light' :
         from models.architectures.exact_ickan_models import create_exact_ickan
         return create_exact_ickan(input_shape, 26, variant="light")
     
-    elif model_name in ['ickan_deep', 'deep_ickan']:
+    elif model_name == 'ickan_deep' :
         from models.architectures.exact_ickan_models import create_exact_ickan
         return create_exact_ickan(input_shape, 26, variant="deep")
     
-    # ========== SUPERIOR KAN ARCHITECTURES (High Performance) ==========
-    elif model_name in ['superior_kan', 'superior_kan_high']:
-        from models.architectures.superior_kan_models import create_superior_kan
-        return create_superior_kan(input_shape, 26, performance_mode='high')
-    
-    elif model_name in ['superior_kan_ultra', 'superior_ultra']:
-        from models.architectures.superior_kan_models import create_superior_kan
-        return create_superior_kan(input_shape, 26, performance_mode='ultra')
-    
-    elif model_name in ['superior_kan_balanced', 'superior_balanced']:
-        from models.architectures.superior_kan_models import create_superior_kan
-        return create_superior_kan(input_shape, 26, performance_mode='balanced')
-    
-    elif model_name in ['superior_kan_safe', 'superior_safe']:
-        from models.architectures.superior_kan_models import create_memory_safe_superior_kan
-        return create_memory_safe_superior_kan(input_shape, 26, max_memory_gb=4)
-    
     # ========== RAPID KAN ARCHITECTURES (Fast Learning) ==========
-    elif model_name in ['rapid_kan', 'rapid_kan_efficient']:
+    elif model_name == 'rapid_kan' :
         from models.architectures.rapid_kan_models import create_rapid_kan
         return create_rapid_kan(input_shape, 26, performance='efficient')
     
-    elif model_name in ['rapid_kan_lite', 'rapid_lite']:
+    elif model_name == 'rapid_kan_lite' :
         from models.architectures.rapid_kan_models import create_rapid_kan
         return create_rapid_kan(input_shape, 26, performance='lightweight')
     
-    elif model_name in ['rapid_kan_power', 'rapid_power']:
+    elif model_name == 'rapid_kan_power' :
         from models.architectures.rapid_kan_models import create_rapid_kan
         return create_rapid_kan(input_shape, 26, performance='powerful')
     
-    # ========== FALLBACK ==========
-    elif model_name in ['simple', 'simple_cnn', 'fallback']:
-        return create_simple_cnn()
-    
     else:
-        available_models = [
-            # CNN Models
-            'alexnet', 'densenet', 'efficientnet', 'inception', 'mobilenet', 'mobilenetv3large', 'resnet', 'resnet18',
-            # KAN-Inspired (Fast)
-            'kan_inspired', 'ickan_inspired', 'wavkan_inspired',
-            # True KAN (Exact)
-            'kan', 'kan_pure', 'kan_fast_exact', 'kan_memory_safe',
-            # True ICKAN (Exact)
-            'ickan', 'ickan_light', 'ickan_deep',
-            # Superior KAN
-            'superior_kan', 'superior_kan_ultra', 'superior_kan_balanced', 'superior_kan_safe',
-            # Rapid KAN
-            'rapid_kan', 'rapid_kan_lite', 'rapid_kan_power',
-            # Fallback
-            'simple_cnn'
-        ]
-        raise ValueError(f"Unknown model: {model_name}. Available models: {available_models}")
-
-def test_all_models():
-    """Test all available models"""
-    print("\n📦 Testing all model architectures...")
-    
-    # Organized model categories for testing
-    cnn_models = ['alexnet', 'densenet', 'efficientnet', 'inception', 'mobilenet', 'mobilenetv3large', 'resnet', 'resnet18']
-    
-    kan_inspired_models = ['kan_inspired', 'ickan_inspired', 'wavkan_inspired']
-    
-    exact_kan_models = ['kan', 'kan_pure', 'kan_fast_exact', 'kan_memory_safe']
-    
-    exact_ickan_models = ['ickan', 'ickan_light', 'ickan_deep']
-    
-    superior_kan_models = ['superior_kan', 'superior_kan_ultra', 'superior_kan_balanced', 'superior_kan_safe']
-    
-    rapid_kan_models = ['rapid_kan', 'rapid_kan_lite', 'rapid_kan_power']
-    
-    fallback_models = ['simple_cnn']
-    
-    # Test different categories
-    all_categories = [
-        ("CNN Models", cnn_models),
-        ("KAN-Inspired (Fast)", kan_inspired_models),
-        ("Exact KAN Models", exact_kan_models),
-        ("Exact ICKAN Models", exact_ickan_models),
-        ("Superior KAN Models", superior_kan_models),
-        ("Rapid KAN Models", rapid_kan_models),
-        ("Fallback Models", fallback_models)
-    ]
-    
-    working_models = []
-    total_models = 0
-    
-    for category_name, models_list in all_categories:
-        print(f"\n🔹 {category_name}:")
-        category_working = []
-        
-        for model_name in models_list:
-            total_models += 1
-            try:
-                model = create_model(model_name)
-                params = sum(p.numel() for p in model.parameters())
-                print(f"  ✅ {model_name}: {params:,} parameters")
-                working_models.append(model_name)
-                category_working.append(model_name)
-            except Exception as e:
-                print(f"  ❌ {model_name}: {str(e)[:100]}...")
-        
-        print(f"  📊 Category Status: {len(category_working)}/{len(models_list)} working")
-    
-    print(f"\n🎯 FINAL SUMMARY:")
-    print(f"   Total Working Models: {len(working_models)}/{total_models}")
-    print(f"   Success Rate: {len(working_models)/total_models*100:.1f}%")
-    print(f"   Working Models: {working_models}")
-    
-    return working_models
+        raise ValueError(f"Unknown model: {model_name}.")
 
 def run_basic_training(model_name: str):
     """Run basic training demonstration"""
@@ -257,7 +124,7 @@ def run_basic_training(model_name: str):
     elif any(superior in model_name.lower() for superior in ['superior_kan']):
         # Superior KAN models prefer moderate learning rates
         learning_rate = 0.002
-    elif model_name.lower() in ['kan', 'kan_pure', 'ickan']:
+    elif model_name.lower() in ['kan', 'ickan']:
         # Exact models prefer lower learning rates
         learning_rate = 0.001
     else:
@@ -378,9 +245,6 @@ def create_model_factory(model_name: str, num_classes: int = 26):
         elif model_name_lower in ['kan', 'exact_kan']:
             from models.architectures.exact_kan_models import create_exact_kan
             return create_exact_kan(input_shape, num_classes)
-        elif model_name_lower in ['kan_pure', 'pure_kan']:
-            from models.architectures.exact_kan_models import create_pure_kan
-            return create_pure_kan(input_shape, num_classes)
         elif model_name_lower in ['kan_fast_exact', 'fast_kan']:
             from models.architectures.exact_kan_models import create_fast_exact_kan
             return create_fast_exact_kan(input_shape, num_classes, mode='balanced')
@@ -433,60 +297,41 @@ def create_model_factory(model_name: str, num_classes: int = 26):
     
     return model_factory
 
-def run_fsc22_cross_validation(model_name: str, n_folds: int = 5, use_gpu: bool = False):
-    """Run real FSC22 training with 5-fold cross-validation"""
-    print(f"\n🚀 Starting FSC22 5-fold cross-validation for {model_name}")
+def run_fsc22_cross_validation(model_name: str, n_folds: int = 5, cuda: bool = False):
     
-    if not CV_TRAINER_AVAILABLE:
-        print("❌ Cross-validation trainer not available")
-        return None
-    
-    # Load real FSC22 data
     features, labels = load_fsc22_data(model_name)
-    if features is None or labels is None:
-        print("❌ Cannot load FSC22 data. Training aborted.")
-        return None
     
-    # Get number of classes from the data
     num_classes = len(np.unique(labels))
-    print(f"📊 Training on {len(features)} samples with {num_classes} classes")
     
-    # Setup device - CPU by default for stability
-    if use_gpu:
+    if cuda:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        if device.type == 'cpu' and use_gpu:
-            print("⚠️ GPU requested but CUDA not available, falling back to CPU")
+        if device.type == 'cpu' and cuda:
+            print("GPU requested but CUDA not available, falling back to CPU")
     else:
         device = torch.device('cpu')
-    print(f"🖥️ Using device: {device}")
+    print(f"Using device: {device}")
     
-    # Create model factory
     model_factory = create_model_factory(model_name, num_classes)
     
-    # Test model creation
     try:
         test_model = model_factory()
         params = sum(p.numel() for p in test_model.parameters())
-        print(f"✅ Model created: {params:,} parameters")
+        print(f"Model created: {params:,} parameters")
     except Exception as e:
-        print(f"❌ Failed to create {model_name}: {e}")
+        print(f"Failed to create {model_name}: {e}")
         return None
     
-    # Initialize cross-validation trainer
-    print("🔧 Initializing cross-validation trainer...")
+    print("Initializing cross-validation trainer...")
     cv_trainer = FSCCrossValidator(
         model_creator_func=model_factory,
         device=device,
         random_state=42
     )
     
-    # Run 5-fold cross-validation
-    print(f"▶️ Starting {n_folds}-fold cross-validation training...")
     try:
         results = cv_trainer.run_kfold_training(features, labels, n_splits=n_folds)
         
-        # Display results
-        print(f"\n🎯 {model_name.upper()} - FSC22 5-Fold Cross-Validation Results:")
+        print(f"\n{model_name.upper()} - FSC22 5-Fold Cross-Validation Results:")
         print("=" * 70)
         
         fold_accuracies = results['individual_accuracies']
@@ -494,12 +339,10 @@ def run_fsc22_cross_validation(model_name: str, n_folds: int = 5, use_gpu: bool 
             print(f"Fold {i}: {accuracy:.2f}%")
         
         print("=" * 70)
-        print(f"📊 Mean Accuracy: {results['mean_accuracy']:.2f}% ± {results['std_accuracy']:.2f}%")
-        print(f"📊 Best Fold: {results['best_fold_acc']:.2f}%")
-        print(f"📊 Worst Fold: {results['worst_fold_acc']:.2f}%")
+        print(f"Mean Accuracy: {results['mean_accuracy']:.2f}% ± {results['std_accuracy']:.2f}%")
+        print(f"Best Fold: {results['best_fold_acc']:.2f}%")
         print("=" * 70)
         
-        # Save results
         results_file = f"fsc22_results_{model_name}.txt"
         with open(results_file, 'w') as f:
             f.write(f"{model_name.upper()} - FSC22 5-Fold Cross-Validation Results\n")
@@ -509,23 +352,20 @@ def run_fsc22_cross_validation(model_name: str, n_folds: int = 5, use_gpu: bool 
             f.write("=" * 70 + "\n")
             f.write(f"Mean Accuracy: {results['mean_accuracy']:.2f}% ± {results['std_accuracy']:.2f}%\n")
             f.write(f"Best Fold: {results['best_fold_acc']:.2f}%\n")
-            f.write(f"Worst Fold: {results['worst_fold_acc']:.2f}%\n")
         
-        print(f"💾 Results saved to {results_file}")
+        print(f"Results saved to {results_file}")
         
         return results
         
     except Exception as e:
-        print(f"❌ Cross-validation training failed: {e}")
+        print(f"Cross-validation training failed: {e}")
         import traceback
         traceback.print_exc()
         return None
 
 def main():
     parser = argparse.ArgumentParser(description='FSC Meta - Complete Pipeline with FSC22 Training')
-    parser.add_argument('--test', action='store_true', help='Test all models')
     parser.add_argument('--model', type=str, help='Train model on FSC22 data with 5-fold CV')
-    parser.add_argument('--demo', action='store_true', help='Run synthetic training demo')
     parser.add_argument('--list', action='store_true', help='List available models')
     parser.add_argument('--gpu', action='store_true', help='Use GPU for training (default: CPU)')
     
@@ -538,59 +378,39 @@ def main():
         'mobilenet', 'mobilenetv3large', 'resnet', 'resnet18',
         # KAN-Inspired (Fast)
         'kan_inspired', 'ickan_inspired', 'wavkan_inspired',
-        # True KAN (Exact)
-        'kan', 'kan_pure', 'kan_fast_exact', 'kan_memory_safe',
-        # True ICKAN (Exact)
+        # KAN
+        'kan', 'kan_fast', 'kan_memory_safe',
+        # ICKAN
         'ickan', 'ickan_light', 'ickan_deep',
-        # Superior KAN
-        'superior_kan', 'superior_kan_ultra', 'superior_kan_balanced', 'superior_kan_safe',
         # Rapid KAN
-        'rapid_kan', 'rapid_kan_lite', 'rapid_kan_power',
-        # Fallback
-        'simple_cnn'
+        'rapid_kan', 'rapid_kan_lite', 'rapid_kan_power'
     ]
     
     if args.list:
-        print("📋 Available models:")
+        print("Available models:")
         for model in available_models:
             print(f"  • {model}")
         return
         
-    if args.test:
-        test_all_models()
-        return
     
     if args.model:
         model_name = args.model.lower()
         
         if model_name not in available_models:
-            print(f"❌ Model '{model_name}' not available. Use --list to see available models.")
+            print(f"Model '{model_name}' not available.")
             return
         
-        print(f"🎯 Selected model: {model_name}")
-        
-        if args.demo:
-            # Run synthetic demo training
-            print("🚀 Running synthetic training demo")
-            run_basic_training(model_name)
-        else:
-            # Default: Run real FSC22 training with cross-validation
-            print("🚀 Starting real FSC22 training with 5-fold cross-validation")
-            run_fsc22_cross_validation(model_name, use_gpu=args.gpu)
+        print("Starting FSC22 training with 5-fold cross-validation")
+        run_fsc22_cross_validation(model_name, cuda=args.gpu)
     
     else:
-        print("🎵 ESC Meta - Complete Pipeline with FSC22 Training")
+        print("Environment Sound Classification")
         print("Available commands:")
         print("  --model <name>            Train model on FSC22 data (default)")
-        print("  --model <name> --demo     Run synthetic training demo")
-        print("  --test                    Test all model architectures")
         print("  --list                    List available models")
         print("  --gpu                     Use GPU for training (default: CPU)")
-        print("\\nExamples:")
         print("  python main.py --model alexnet      # Train on real FSC22 data (CPU)")
         print("  python main.py --model alexnet --gpu  # Train with GPU")
-        print("  python main.py --model alexnet --demo  # Synthetic demo")
-        print("  python main.py --test               # Test all models")
 
 if __name__ == "__main__":
     main()
