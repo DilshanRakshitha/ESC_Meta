@@ -402,7 +402,7 @@ class CrossValidationTrainer:
         # Train
         history = trainer.train(train_data, val_data, **training_kwargs)
         
-        # Evaluate on validation set
+        # Evaluate
         val_results = trainer.evaluate(val_data)
         
         fold_result = {
@@ -488,7 +488,7 @@ class FSCTrainer:
         # Calculate decay factor for exponential decay: final_lr = base_lr * (gamma^epochs)
         decay_factor = (self.final_lr / self.base_lr) ** (1.0 / self.epochs)
         
-        # Adam optimizer as used in FSC Original
+        # Adam optimizer
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.base_lr)
         
         # Exponential decay scheduler
@@ -501,7 +501,7 @@ class FSCTrainer:
         
         print(f'Training Fold {self.fold_num}...')
         
-        # Setup optimizer with FSC Original parameters
+        # Setup optimizer
         self.setup_optimizer()
         
         # Early stopping tracking
@@ -608,12 +608,12 @@ class FSCCrossValidator:
         self.device = device
         self.random_state = random_state
         
-    def run_kfold_training(self, features, labels, n_splits=5):
+    def run_kfold_training(self, features, labels, n_splits=5): # full data is given to the function, less work in the data preparation
         """
         Args:
-            features: Input features (numpy array)
-            labels: Target labels (numpy array)
-            n_splits: Number of folds (FSC Original uses 5)
+            features: Input features
+            labels: Target labels
+            n_splits: Number of folds
             
         Returns:
             Dictionary with cross-validation results
@@ -675,7 +675,6 @@ class FSCCrossValidator:
         std_acc = np.std(val_accuracies)
         
         print("\n" + "=" * 80)
-        print("CROSS-VALIDATION COMPLETED!")
         print(f"Results Summary:")
         for i, acc in enumerate(val_accuracies, 1):
             print(f"   Fold {i}: {acc:.2f}%")
@@ -684,24 +683,16 @@ class FSCCrossValidator:
         
     def run_kfold_training_with_folds(self, folds_data, n_splits=5):
         """
-        Run k-fold cross-validation using pre-separated fold data to prevent data leakage
+        Run k-fold cross-validation with pre-seperated data
         
         Args:
             folds_data: Dict containing fold data {fold_num: [(feature, label), ...]}
             n_splits: Number of folds (should match number of folds in data)
         """
         print(f"\n{'='*80}")
-        print("5-FOLD CROSS VALIDATION - NO DATA LEAKAGE")
-        print(f"Available folds: {list(folds_data.keys())}")
-        print(f"Folds: {n_splits}")
-        print(f"{'='*80}")
         
         fold_results = []
         available_folds = list(folds_data.keys())
-        
-        if len(available_folds) != n_splits:
-            print(f"Warning: Expected {n_splits} folds, but got {len(available_folds)}")
-            n_splits = min(n_splits, len(available_folds))
         
         for fold_num in range(1, n_splits + 1):
             print(f"\nProcessing Fold {fold_num}/{n_splits}")
@@ -739,7 +730,7 @@ class FSCCrossValidator:
             val_features = np.array(val_features)
             val_labels = np.array(val_labels)
             
-            # Check if we need to transpose for CNN models (non-KAN models)
+            # Check if we need to transpose for CNN models
             # Create a sample model to check the type
             sample_model = self.model_creator_func()
             model_name = type(sample_model).__name__.lower()
@@ -748,12 +739,8 @@ class FSCCrossValidator:
             
             if len(train_features.shape) == 4 and train_features.shape[-1] == 3 and not is_kan_model:
                 # CNN models expect (batch, channels, height, width) format
-                print(f"   Transposing features from {train_features.shape} to CNN format...")
                 train_features = np.transpose(train_features, (0, 3, 1, 2))  # (B,H,W,C) -> (B,C,H,W)
                 val_features = np.transpose(val_features, (0, 3, 1, 2))
-                print(f"   New training shape: {train_features.shape}")
-            elif is_kan_model:
-                print(f"   Keeping original format for KAN model: {train_features.shape}")
             
             print(f"   Train: {len(train_features)} samples, Val: {len(val_features)} samples")
             print(f"   Training folds: {train_folds}, Validation fold: {val_fold}")
@@ -783,7 +770,7 @@ class FSCCrossValidator:
                 pin_memory=True if self.device.type == 'cuda' else False
             )
             
-            # Create fresh model for this fold
+            # Create fresh model
             model = self.model_creator_func()
             
             # Train the fold

@@ -132,38 +132,6 @@ class SimpleModelFactory:
                 deep_ickan_input_shape = input_shape
             return create_exact_ickan(deep_ickan_input_shape, num_classes, variant="deep")
             
-        elif model_name.lower() == 'superior_kan': # high computation and time
-            # Superior KAN optimized for >90% accuracy
-            if len(input_shape) == 3:  # (C, H, W) -> (H, W, C)
-                superior_input_shape = (input_shape[1], input_shape[2], input_shape[0])
-            else:
-                superior_input_shape = input_shape
-            return create_superior_kan(superior_input_shape, num_classes, performance_mode='high')
-            
-        elif model_name.lower() == 'superior_kan_ultra': # high computation
-            # Ultra-high performance KAN
-            if len(input_shape) == 3:  # (C, H, W) -> (H, W, C)
-                ultra_input_shape = (input_shape[1], input_shape[2], input_shape[0])
-            else:
-                ultra_input_shape = input_shape
-            return create_superior_kan(ultra_input_shape, num_classes, performance_mode='ultra')
-            
-        elif model_name.lower() == 'superior_kan_balanced': #high computation
-            # Balanced Superior KAN
-            if len(input_shape) == 3:  # (C, H, W) -> (H, W, C)
-                balanced_input_shape = (input_shape[1], input_shape[2], input_shape[0])
-            else:
-                balanced_input_shape = input_shape
-            return create_superior_kan(balanced_input_shape, num_classes, performance_mode='balanced')
-            
-        elif model_name.lower() == 'superior_kan_safe': # high computation
-            # Memory-safe Superior KAN
-            if len(input_shape) == 3:  # (C, H, W) -> (H, W, C)
-                safe_input_shape = (input_shape[1], input_shape[2], input_shape[0])
-            else:
-                safe_input_shape = input_shape
-            return create_memory_safe_superior_kan(safe_input_shape, num_classes, max_memory_gb=4)
-            
         elif model_name.lower() == 'rapid_kan': # 97
             # Fast-learning KAN optimized for quick convergence
             if len(input_shape) == 3:  # (C, H, W) -> (H, W, C)
