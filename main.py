@@ -12,60 +12,50 @@ _folds_data_cache = None
 from models.training.trainer import FSCCrossValidator
 from utils.data_prep import DataPreprocessor
 
-def load_fsc22_data(model_name: str = None):
-    
+def load_fsc22_folds(model_name: str = None):
     
     data_path = "/home/dilshan/Documents/ESC/temp1/ESC_Meta/data/fsc22/Pickle_Files/aug_ts_ps_mel_features_5_20"
     
     try:
-        
         preprocessor = DataPreprocessor(data_path)
         folds_data, _ = preprocessor.prepare_fsc22_data()
         
-        # Combine all folds for shape/class info only (for model creation)
-        # The actual cross-validation will use separate folds
-        all_features = []
-        all_labels = []
+        if not folds_data:
+            return None
         
-        for fold_num, fold_data in folds_data.items():
+        first_fold_data = list(folds_data.values())[0]
+        sample_feature = first_fold_data[0][0]
+        sample_label = first_fold_data[0][1]
+        
+        # Count total samples and classes across all folds
+        total_samples = sum(len(fold_data) for fold_data in folds_data.values())
+        all_labels_for_counting = []
+        for fold_data in folds_data.values():
             for item in fold_data:
-                if len(item) == 2:
-                    all_features.append(item[0])
-                    all_labels.append(item[1])
+                all_labels_for_counting.append(item[1])
         
-        # Convert to numpy arrays
-        features = np.array(all_features)
-        labels = np.array(all_labels)
+        num_classes = len(set(all_labels_for_counting))
         
-        # Handle data format based on model type
-        is_kan_model = model_name and any(kan_type in model_name.lower() 
-                                        for kan_type in ['kan', 'ickan', 'wavkan', 'exact_kan', 'exact_ickan'])
+        print(f"FSC22 folds loaded successfully")
+        print(f"Number of folds: {len(folds_data)}")
+        print(f"Total samples: {total_samples}")
+        print(f"Sample feature shape: {np.array(sample_feature).shape}")
+        print(f"Number of classes: {num_classes}")
         
-        if len(features.shape) == 4 and features.shape[-1] == 3:
-            if is_kan_model:
-                # KAN models expect (batch, height, width, channels) format
-                print(f"📊 Keeping original format for KAN model: {features.shape}")
-            else:
-                # CNN models expect (batch, channels, height, width) format
-                print(f"📊 Transposing data from {features.shape} to CNN format...")
-                features = np.transpose(features, (0, 3, 1, 2))  # (B,H,W,C) -> (B,C,H,W)
-                print(f"📊 New shape: {features.shape}")
-        
-        print(f"✅ FSC22 data loaded successfully")
-        print(f"📊 Features shape: {features.shape}")
-        print(f"📊 Labels shape: {labels.shape}")
-        print(f"📊 Number of classes: {len(np.unique(labels))}")
-        print(f"🔒 Fold structure preserved for proper cross-validation")
-        
-        # Store fold structure in a global variable for cross-validation
+        # Store fold structure for cross-validation
         global _folds_data_cache
         _folds_data_cache = folds_data
         
-        return features, labels
+        return {
+            'folds_data': folds_data,
+            'num_classes': num_classes,
+            'sample_shape': np.array(sample_feature).shape,
+            'model_name': model_name
+        }
         
     except Exception as e:
-        print(f"❌ Error loading FSC22 data: {e}")
-        return None, None
+        print(f"Error loading FSC22 folds: {e}")
+        return None
 
 def create_model_factory(model_name: str, num_classes: int = 26):
     
@@ -151,9 +141,16 @@ def create_model_factory(model_name: str, num_classes: int = 26):
 
 def run_fsc22_cross_validation(model_name: str, n_folds: int = 5, cuda: bool = False):
     
-    features, labels = load_fsc22_data(model_name)
+    fold_info = load_fsc22_folds(model_name)
+    if fold_info is None:
+        print("Failed to load fold data")
+        return None
     
-    num_classes = len(np.unique(labels))
+    num_classes = fold_info['num_classes']
+    sample_shape = fold_info['sample_shape']
+    
+    print(f"Model input shape will be: {sample_shape}")
+    print(f"Number of classes: {num_classes}")
     
     if cuda:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -168,12 +165,11 @@ def run_fsc22_cross_validation(model_name: str, n_folds: int = 5, cuda: bool = F
     try:
         test_model = model_factory()
         params = sum(p.numel() for p in test_model.parameters())
-        print(f"Model created: {params:,} parameters")
+        print(f"Model created successfully: {params:,} parameters")
+        del test_model
     except Exception as e:
-        print(f"Failed to create {model_name}: {e}")
         return None
     
-    print("Initializing cross-validation trainer...")
     cv_trainer = FSCCrossValidator(
         model_creator_func=model_factory,
         device=device,
@@ -183,9 +179,9 @@ def run_fsc22_cross_validation(model_name: str, n_folds: int = 5, cuda: bool = F
     try:
         global _folds_data_cache
         if _folds_data_cache is None:
-            print("No fold data available for proper cross-validation")
             return None
-            
+
+        print(f"Running {n_folds}-fold cross-validation")
         results = cv_trainer.run_kfold_training_with_folds(_folds_data_cache, n_splits=n_folds)
         
         print(f"\n{model_name.upper()} - FSC22 5-Fold Cross-Validation Results:")
