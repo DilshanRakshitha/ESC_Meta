@@ -1,36 +1,24 @@
-"""
-Exact ICKAN (Image-Convolution KAN) Implementation
-Copied exactly from ICKAN/models/conv_and_kan.py with minimal changes for ESC_Meta
-"""
-
 import torch
 from torch import nn
 import torch.nn.functional as F
-from .exact_kan_models import KANLinear
+from .KAN import KANLinear
 
 
 class ICKAN(nn.Module):
-    """
-    Exact copy of original ICKAN - only changed for ESC input dimensions and classes
-    """
+    ""
     def __init__(self, input_shape=(64, 431, 1), num_classes=26):
         super(ICKAN, self).__init__()
         h, w, c = input_shape
         
-        # Exact same conv layers as original ICKAN
         self.conv1 = nn.Conv2d(c, 5, kernel_size=3, padding=1) 
         self.conv2 = nn.Conv2d(5, 5, kernel_size=3, padding=1)
 
-        # Max pooling layer - exact same
         self.maxpool = nn.MaxPool2d(kernel_size=2)
         
-        # Flatten layer - exact same
         self.flatten = nn.Flatten()
 
-        # Calculate FC input size for ESC data
         fc_input_size = self._get_fc_input_features(h, w, c)
         
-        # Exact same KAN layers as original (only changed dimensions for ESC)
         self.kan1 = KANLinear(
             fc_input_size,
             1000,
@@ -57,30 +45,20 @@ class ICKAN(nn.Module):
 
     def _get_fc_input_features(self, h, w, c):
         """
-        Calculate FC input size - adapted from original for ESC input dimensions
+        Calculate FC input size
         """
         # Use dummy input to calculate feature size
         device = next(self.conv1.parameters()).device if list(self.conv1.parameters()) else 'cpu'
         x = torch.randn(1, c, h, w, device=device)
-        print('input:', '\t\t', x.shape)
         x = self.conv1(x)
-        print('conv1:', '\t\t', x.shape)
         x = self.maxpool(x)
-        print('maxpool:', '\t\t', x.shape)
-        
         x = self.conv2(x)
-        print('conv2:', '\t\t', x.shape)
         x = self.maxpool(x)
-        print('maxpool:', '\t\t', x.shape)
-    
         x = torch.flatten(x, 1)
-        print('flatten:', '\t\t', x.shape)
         return x.size(1)
 
     def forward(self, x):
-        """
-        Exact same forward pass as original ICKAN
-        """
+        
         # Handle ESC input format
         if x.dim() == 4 and x.shape[1] not in [1, 3]:
             x = x.permute(0, 3, 1, 2)
@@ -92,7 +70,7 @@ class ICKAN(nn.Module):
         x = self.flatten(x)
         x = self.kan1(x)
         x = self.kan2(x)
-        x = F.log_softmax(x, dim=1)  # Exact same as original
+        x = F.log_softmax(x, dim=1)
 
         return x
     
@@ -229,13 +207,13 @@ class DeepICKAN(nn.Module):
 
 
 # Factory functions for ESC_Meta compatibility
-def create_exact_ickan(input_shape, num_classes=26, variant="standard"):
+def create_ickan(input_shape, num_classes=26, variant="standard"):
     """Create exact ICKAN models"""
     if variant == "light":
         return LightICKAN(input_shape, num_classes)
     elif variant == "deep":
         return DeepICKAN(input_shape, num_classes)
-    else:  # standard - exact copy of original
+    else:
         return ICKAN(input_shape, num_classes)
 
 def create_ickan_model(input_shape, num_classes=26):

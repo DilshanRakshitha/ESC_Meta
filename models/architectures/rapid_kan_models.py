@@ -6,7 +6,7 @@ Optimized for rapid convergence and high performance
 import torch
 import torch.nn.functional as F
 import math
-from .exact_kan_models import KANLinear
+from .KAN import KANLinear
 
 
 class FastLearningKANLinear(KANLinear):

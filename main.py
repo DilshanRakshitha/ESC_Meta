@@ -103,25 +103,25 @@ def create_model_factory(model_name: str, num_classes: int = 26):
         
         # ========== KAN ARCHITECTURES ==========
         elif model_name_lower == 'kan' :
-            from models.architectures.exact_kan_models import create_exact_kan
+            from models.architectures.KAN import create_exact_kan
             return create_exact_kan(input_shape, num_classes)
         elif model_name_lower == 'kan_fast' :
-            from models.architectures.exact_kan_models import create_fast_exact_kan
-            return create_fast_exact_kan(input_shape, num_classes, mode='balanced')
+            from models.architectures.KAN import create_fast_kan
+            return create_fast_kan(input_shape, num_classes, mode='balanced')
         elif model_name_lower == 'kan_memory_safe' :
-            from models.architectures.exact_kan_models import create_memory_safe_kan
+            from models.architectures.KAN import create_memory_safe_kan
             return create_memory_safe_kan(input_shape, num_classes, max_memory_gb=6)
         
         # ========== ICKAN ARCHITECTURES ==========
         elif model_name_lower == 'ickan':
-            from models.architectures.exact_ickan_models import create_exact_ickan
-            return create_exact_ickan(input_shape, num_classes, variant="standard")
+            from models.architectures.ICKAN import create_ickan
+            return create_ickan(input_shape, num_classes, variant="standard")
         elif model_name_lower == 'ickan_light':
-            from models.architectures.exact_ickan_models import create_exact_ickan
-            return create_exact_ickan(input_shape, num_classes, variant="light")
+            from models.architectures.ICKAN import create_ickan
+            return create_ickan(input_shape, num_classes, variant="light")
         elif model_name_lower == 'ickan_deep' :
-            from models.architectures.exact_ickan_models import create_exact_ickan
-            return create_exact_ickan(input_shape, num_classes, variant="deep")
+            from models.architectures.ICKAN import create_ickan
+            return create_ickan(input_shape, num_classes, variant="deep")
         
         # ========== RAPID KAN ARCHITECTURES (Fast Learning) ==========
         elif model_name_lower == 'rapid_kan':

@@ -1,7 +1,3 @@
-"""
-KAN (Kolmogorov-Arnold Network) Implementation
-"""
-
 import torch
 import torch.nn.functional as F
 import math
@@ -329,7 +325,7 @@ class ESC_KAN(torch.nn.Module):
         return self.kan.regularization_loss(regularize_activation, regularize_entropy)
 
 
-# Factory functions for ESC_Meta compatibility
+# Factory functions for ESC compatibility
 def create_exact_kan(input_shape, num_classes=26, hidden_layers=[512, 256]):
     return ESC_KAN(input_shape, num_classes, hidden_layers)
 
@@ -571,7 +567,7 @@ def create_memory_safe_kan(input_shape, num_classes=26, max_memory_gb=8):
     return MemoryEfficientKAN(input_shape, num_classes, max_memory_gb)
 
 
-def create_fast_exact_kan(input_shape, num_classes=26, mode='balanced', 
+def create_fast_kan(input_shape, num_classes=26, mode='balanced', 
                          bottleneck_dim=1024, dropout_rate=0.2, 
                          disable_grid_update=True):
     """
