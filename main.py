@@ -12,182 +12,15 @@ _folds_data_cache = None
 from models.training.trainer import FSCCrossValidator
 from utils.data_prep import DataPreprocessor
 
-def create_model(model_name: str):
-    model_name = model_name.lower()
-    input_shape = (128, 196, 3)
-    
-    # ========== CNN ARCHITECTURES ==========
-    if model_name == 'alexnet' :
-        from models.architectures.AlexNet import AlexNet
-        return AlexNet(input_size=3, num_classes=26)
-    
-    elif model_name == 'densenet' :
-        from models.architectures.DenseNet121 import create_densenet121
-        return create_densenet121(num_classes=26, input_channels=3)
-    
-    elif model_name == 'efficientnet' :
-        from models.architectures.EfficientNetV2B0 import create_efficientnet_v2_b0
-        return create_efficientnet_v2_b0(num_classes=26, input_channels=3)
-
-    elif model_name == 'inception':
-        from models.architectures.InceptionV3 import create_inception_v3
-        return create_inception_v3(num_classes=26, input_channels=3, pretrained=False)
-
-    elif model_name == 'mobilenet':
-        from models.architectures.MobileNetV3Small import create_mobilenet_v3_small
-        return create_mobilenet_v3_small(num_classes=26, input_channels=3)
-    
-    elif model_name == 'mobilenetv3large' :
-        from models.architectures.MobileNetV3Small import create_mobilenet_v3_large
-        return create_mobilenet_v3_large(num_classes=26, input_channels=3)
-    
-    elif model_name == 'resnet' or model_name == 'resnet50' :
-        from models.architectures.ResNet50V2 import create_resnet50_v2
-        return create_resnet50_v2(num_classes=26, input_channels=3)
-    
-    elif model_name == 'resnet18' :
-        from models.architectures.ResNet50V2 import create_resnet18
-        return create_resnet18(num_classes=26, input_channels=3)
-    
-    # ========== KAN-INSPIRED ARCHITECTURES (Fast, CNN-based) ==========
-    elif model_name == 'kan_inspired' :
-        from models.architectures.kan_models import create_high_performance_kan
-        return create_high_performance_kan(input_shape, 26)
-    
-    elif model_name == 'ickan_inspired' :
-        from models.architectures.ickan_models import create_high_performance_ickan
-        return create_high_performance_ickan(input_shape, 26)
-    
-    elif model_name == 'wavkan_inspired' :
-        from models.architectures.wavkan_models import create_high_performance_wavkan
-        return create_high_performance_wavkan(input_shape, 26)
-    
-    # ========== TRUE KAN ARCHITECTURES (Exact implementations) ==========
-    elif model_name == 'kan' :
-        from models.architectures.exact_kan_models import create_exact_kan
-        return create_exact_kan(input_shape, 26)
-    
-    elif model_name == 'kan_fast' :
-        from models.architectures.exact_kan_models import create_fast_exact_kan
-        return create_fast_exact_kan(input_shape, 26, mode='balanced')
-    
-    elif model_name == 'kan_memory_safe' :
-        from models.architectures.exact_kan_models import create_memory_safe_kan
-        return create_memory_safe_kan(input_shape, 26, max_memory_gb=6)
-    
-    # Exact ICKAN models
-    elif model_name == 'ickan' :
-        from models.architectures.exact_ickan_models import create_exact_ickan
-        return create_exact_ickan(input_shape, 26, variant="standard")
-    
-    elif model_name == 'ickan_light' :
-        from models.architectures.exact_ickan_models import create_exact_ickan
-        return create_exact_ickan(input_shape, 26, variant="light")
-    
-    elif model_name == 'ickan_deep' :
-        from models.architectures.exact_ickan_models import create_exact_ickan
-        return create_exact_ickan(input_shape, 26, variant="deep")
-    
-    # ========== RAPID KAN ARCHITECTURES (Fast Learning) ==========
-    elif model_name == 'rapid_kan' :
-        from models.architectures.rapid_kan_models import create_rapid_kan
-        return create_rapid_kan(input_shape, 26, performance='efficient')
-    
-    elif model_name == 'rapid_kan_lite' :
-        from models.architectures.rapid_kan_models import create_rapid_kan
-        return create_rapid_kan(input_shape, 26, performance='lightweight')
-    
-    elif model_name == 'rapid_kan_power' :
-        from models.architectures.rapid_kan_models import create_rapid_kan
-        return create_rapid_kan(input_shape, 26, performance='powerful')
-    
-    else:
-        raise ValueError(f"Unknown model: {model_name}.")
-
-def run_basic_training(model_name: str):
-    """Run basic training demonstration"""
-    print(f"\n🎯 Running basic training demo for {model_name}...")
-    
-    # Create synthetic data
-    batch_size = 32
-    features = torch.randn(batch_size, 3, 128, 196)
-    labels = torch.randint(0, 26, (batch_size,))
-    
-    # Create model
-    model = create_model(model_name)
-    
-    # Training setup
-    criterion = nn.CrossEntropyLoss()
-    
-    # Special learning rates for different model types
-    if any(rapid in model_name.lower() for rapid in ['rapid_kan']):
-        # Rapid KAN models prefer higher learning rates
-        learning_rate = 0.003
-    elif any(superior in model_name.lower() for superior in ['superior_kan']):
-        # Superior KAN models prefer moderate learning rates
-        learning_rate = 0.002
-    elif model_name.lower() in ['kan', 'ickan']:
-        # Exact models prefer lower learning rates
-        learning_rate = 0.001
-    else:
-        # CNN models standard learning rate
-        learning_rate = 0.001
-    
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-    
-    # Simple training loop
-    model.train()
-    for epoch in range(3):  # Just 3 epochs for demo
-        optimizer.zero_grad()
-        
-        # All models (CNN and KAN) use the same standard PyTorch format
-        # (batch, channels, height, width) - KAN models handle format internally
-        model_input = features
-        
-        outputs = model(model_input)
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
-        
-        # Calculate accuracy
-        _, predicted = torch.max(outputs.data, 1)
-        accuracy = (predicted == labels).sum().item() / labels.size(0)
-        
-        print(f"Epoch {epoch+1}/3: Loss={loss:.4f}, Accuracy={accuracy:.4f}, LR={learning_rate}")
-    
-    print(f"✅ Training demo completed for {model_name}")
-    return model
-
 def load_fsc22_data(model_name: str = None):
-    """Load real FSC22 dataset with proper fold separation to prevent data leakage"""
-    print("📂 Loading FSC22 dataset...")
+    
     
     data_path = "/home/dilshan/Documents/ESC/temp1/ESC_Meta/data/fsc22/Pickle_Files/aug_ts_ps_mel_features_5_20"
     
     try:
-        # Use DataPreprocessor to load FSC22 data with proper fold separation
+        
         preprocessor = DataPreprocessor(data_path)
         folds_data, _ = preprocessor.prepare_fsc22_data()
-        
-        if not folds_data:
-            print("❌ No fold data loaded!")
-            return None, None
-        
-        # Extract features and labels from the first fold for getting structure info
-        first_fold_data = list(folds_data.values())[0]
-        
-        # Extract features and labels from fold data
-        if isinstance(first_fold_data, list) and len(first_fold_data) > 0:
-            if len(first_fold_data[0]) == 2:
-                # Format: [[feature, label], [feature, label], ...]
-                sample_feature = first_fold_data[0][0]
-                sample_label = first_fold_data[0][1]
-            else:
-                print("❌ Unexpected fold data format")
-                return None, None
-        else:
-            print("❌ Empty or invalid fold data")
-            return None, None
         
         # Combine all folds for shape/class info only (for model creation)
         # The actual cross-validation will use separate folds
@@ -235,99 +68,81 @@ def load_fsc22_data(model_name: str = None):
         return None, None
 
 def create_model_factory(model_name: str, num_classes: int = 26):
-    """Create a model factory function for cross-validation with ALL architectures"""
+    
     def model_factory():
-        # Create model with correct number of classes for FSC22
+    
         model_name_lower = model_name.lower()
-        input_shape = (128, 196, 3)  # Standard ESC input shape
+        input_shape = (128, 196, 3)  
         
         # ========== CNN ARCHITECTURES ==========
-        if model_name_lower in ['alexnet', 'alex']:
+        if model_name_lower == 'alexnet' :
             from models.architectures.AlexNet import AlexNet
             return AlexNet(input_size=3, num_classes=num_classes)
-        elif model_name_lower in ['densenet', 'densenet121']:
+        elif model_name_lower == 'densenet' :
             from models.architectures.DenseNet121 import create_densenet121
             return create_densenet121(num_classes=num_classes, input_channels=3)
-        elif model_name_lower in ['efficientnet', 'efficientnetv2', 'efficientnetv2b0']:
+        elif model_name_lower == 'efficientnet' :
             from models.architectures.EfficientNetV2B0 import create_efficientnet_v2_b0
             return create_efficientnet_v2_b0(num_classes=num_classes, input_channels=3)
-        elif model_name_lower in ['inception', 'inceptionv3']:
+        elif model_name_lower == 'inception' :
             from models.architectures.InceptionV3 import create_inception_v3
             return create_inception_v3(num_classes=num_classes, input_channels=3, pretrained=False)
-        elif model_name_lower in ['mobilenet', 'mobilenetv3', 'mobilenetv3small']:
+        elif model_name_lower == 'mobilenet' :
             from models.architectures.MobileNetV3Small import create_mobilenet_v3_small
             return create_mobilenet_v3_small(num_classes=num_classes, input_channels=3)
-        elif model_name_lower in ['mobilenetv3large']:
+        elif model_name_lower == 'mobilenetv3large' :
             from models.architectures.MobileNetV3Small import create_mobilenet_v3_large
             return create_mobilenet_v3_large(num_classes=num_classes, input_channels=3)
-        elif model_name_lower in ['resnet', 'resnet50', 'resnet50v2']:
+        elif model_name_lower == 'resnet50' :
             from models.architectures.ResNet50V2 import create_resnet50_v2
             return create_resnet50_v2(num_classes=num_classes, input_channels=3)
-        elif model_name_lower in ['resnet18']:
+        elif model_name_lower == 'resnet18' :
             from models.architectures.ResNet50V2 import create_resnet18
             return create_resnet18(num_classes=num_classes, input_channels=3)
         
         # ========== KAN-INSPIRED ARCHITECTURES (Fast, CNN-based) ==========
-        elif model_name_lower in ['kan_inspired', 'kan_fast']:
+        elif model_name_lower == 'kan_inspired' :
             from models.architectures.kan_models import create_high_performance_kan
             return create_high_performance_kan(input_shape, num_classes)
-        elif model_name_lower in ['ickan_inspired', 'ickan_fast']:
+        elif model_name_lower == 'ickan_inspired' :
             from models.architectures.ickan_models import create_high_performance_ickan
             return create_high_performance_ickan(input_shape, num_classes)
-        elif model_name_lower in ['wavkan_inspired', 'wavkan_fast']:
+        elif model_name_lower == 'wavkan_inspired' :
             from models.architectures.wavkan_models import create_high_performance_wavkan
             return create_high_performance_wavkan(input_shape, num_classes)
         
-        # ========== TRUE KAN ARCHITECTURES (Exact implementations) ==========
-        elif model_name_lower in ['kan', 'exact_kan']:
+        # ========== KAN ARCHITECTURES ==========
+        elif model_name_lower == 'kan' :
             from models.architectures.exact_kan_models import create_exact_kan
             return create_exact_kan(input_shape, num_classes)
-        elif model_name_lower in ['kan_fast_exact', 'fast_kan']:
+        elif model_name_lower == 'kan_fast' :
             from models.architectures.exact_kan_models import create_fast_exact_kan
             return create_fast_exact_kan(input_shape, num_classes, mode='balanced')
-        elif model_name_lower in ['kan_memory_safe', 'memory_safe_kan']:
+        elif model_name_lower == 'kan_memory_safe' :
             from models.architectures.exact_kan_models import create_memory_safe_kan
             return create_memory_safe_kan(input_shape, num_classes, max_memory_gb=6)
         
-        # ========== TRUE ICKAN ARCHITECTURES ==========
-        elif model_name_lower in ['ickan', 'exact_ickan']:
+        # ========== ICKAN ARCHITECTURES ==========
+        elif model_name_lower == 'ickan':
             from models.architectures.exact_ickan_models import create_exact_ickan
             return create_exact_ickan(input_shape, num_classes, variant="standard")
-        elif model_name_lower in ['ickan_light', 'light_ickan']:
+        elif model_name_lower == 'ickan_light':
             from models.architectures.exact_ickan_models import create_exact_ickan
             return create_exact_ickan(input_shape, num_classes, variant="light")
-        elif model_name_lower in ['ickan_deep', 'deep_ickan']:
+        elif model_name_lower == 'ickan_deep' :
             from models.architectures.exact_ickan_models import create_exact_ickan
             return create_exact_ickan(input_shape, num_classes, variant="deep")
         
-        # ========== SUPERIOR KAN ARCHITECTURES (High Performance) ==========
-        elif model_name_lower in ['superior_kan', 'superior_kan_high']:
-            from models.architectures.superior_kan_models import create_superior_kan
-            return create_superior_kan(input_shape, num_classes, performance_mode='high')
-        elif model_name_lower in ['superior_kan_ultra', 'superior_ultra']:
-            from models.architectures.superior_kan_models import create_superior_kan
-            return create_superior_kan(input_shape, num_classes, performance_mode='ultra')
-        elif model_name_lower in ['superior_kan_balanced', 'superior_balanced']:
-            from models.architectures.superior_kan_models import create_superior_kan
-            return create_superior_kan(input_shape, num_classes, performance_mode='balanced')
-        elif model_name_lower in ['superior_kan_safe', 'superior_safe']:
-            from models.architectures.superior_kan_models import create_memory_safe_superior_kan
-            return create_memory_safe_superior_kan(input_shape, num_classes, max_memory_gb=4)
-        
         # ========== RAPID KAN ARCHITECTURES (Fast Learning) ==========
-        elif model_name_lower in ['rapid_kan', 'rapid_kan_efficient']:
+        elif model_name_lower == 'rapid_kan':
             from models.architectures.rapid_kan_models import create_rapid_kan
             return create_rapid_kan(input_shape, num_classes, performance='efficient')
-        elif model_name_lower in ['rapid_kan_lite', 'rapid_lite']:
+        elif model_name_lower == 'rapid_kan_lite' :
             from models.architectures.rapid_kan_models import create_rapid_kan
             return create_rapid_kan(input_shape, num_classes, performance='lightweight')
-        elif model_name_lower in ['rapid_kan_power', 'rapid_power']:
+        elif model_name_lower == 'rapid_kan_power' :
             from models.architectures.rapid_kan_models import create_rapid_kan
             return create_rapid_kan(input_shape, num_classes, performance='powerful')
-        
-        # ========== FALLBACK ==========
-        elif model_name_lower in ['simple', 'simple_cnn', 'fallback']:
-            return create_simple_cnn(num_classes=num_classes)
         
         else:
             raise ValueError(f"Model {model_name} not supported in cross-validation pipeline")
@@ -366,10 +181,9 @@ def run_fsc22_cross_validation(model_name: str, n_folds: int = 5, cuda: bool = F
     )
     
     try:
-        # Use the new fold-based cross-validation method to prevent data leakage
         global _folds_data_cache
         if _folds_data_cache is None:
-            print("❌ No fold data available for proper cross-validation")
+            print("No fold data available for proper cross-validation")
             return None
             
         results = cv_trainer.run_kfold_training_with_folds(_folds_data_cache, n_splits=n_folds)
