@@ -16,9 +16,9 @@ import argparse
 import yaml
 from pathlib import Path
 
-# Fixed parameters matching the working implementation
-INPUT_LENGTH = 1000 * 5  # 0.25 seconds at 20kHz (same as Forest-Sound-Analysis)
+# Fixed parameters matching the working implementation  
 SAMPLE_RATE = 20000
+INPUT_LENGTH = SAMPLE_RATE * 5  # 5 seconds at 20kHz to match Forest-Sound-Analysis (128, 196, 3)
 
 def random_crop(sound, size):
     """Original working function"""
@@ -229,11 +229,12 @@ def save_features(spects, output_dir, feature_type, augmentation_level):
     print(f'Label range: {min(y)} to {max(y)} (0-25 format)')
     
     # Create main output directory
-    pickle_dir = os.path.join(output_dir, 'Pickle_Files')
+    # output_dir is already the Pickle_Files directory, so use it directly
+    pickle_dir = output_dir
     os.makedirs(pickle_dir, exist_ok=True)
     
     # Create feature type directory (matching expected format)
-    feature_dir_name = f"aug_ts_ps_{feature_type.lower()}_features_5_{augmentation_level}0"
+    feature_dir_name = f"aug_ts_ps_{feature_type.lower()}_features_5_20"
     feature_dir = os.path.join(pickle_dir, feature_dir_name)
     os.makedirs(feature_dir, exist_ok=True)
     
