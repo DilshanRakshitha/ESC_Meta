@@ -83,7 +83,7 @@ class WaveletKANBlock(nn.Module):
         
         return out
 
-class HighPerformanceWavKAN(nn.Module):
+class HighPerformanceWavKANinspired(nn.Module):
     
     
     def __init__(self, input_shape: Tuple[int, int, int], num_classes: int, config: ModelConfig = None):
@@ -176,7 +176,7 @@ class HighPerformanceWavKAN(nn.Module):
         
         return x
 
-class BasicWavKAN(nn.Module):
+class BasicWavKANinspired(nn.Module):
     """Basic WavKAN model for comparison"""
     
     def __init__(self, input_shape: Tuple[int, int, int], num_classes: int, config: ModelConfig = None):
@@ -255,9 +255,9 @@ def create_wavkan_inspired_model(config: ModelConfig) -> nn.Module:
     model_type = getattr(config, 'model_type', 'high_performance')
     
     if model_type == 'high_performance':
-        return HighPerformanceWavKAN(input_shape, num_classes, config)
+        return HighPerformanceWavKANinspired(input_shape, num_classes, config)
     elif model_type == 'basic':
-        return BasicWavKAN(input_shape, num_classes, config)
+        return BasicWavKANinspired(input_shape, num_classes, config)
     else:
         raise ValueError(f"Unknown WavKAN model type: {model_type}")
 

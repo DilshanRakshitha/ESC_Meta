@@ -58,7 +58,7 @@ class EnhancedICKANBlock(nn.Module):
         
         return out
 
-class HighPerformanceICKAN(nn.Module):
+class HighPerformanceICKANinspired(nn.Module):
     
     def __init__(self, input_shape: Tuple[int, int, int], num_classes: int, config: ModelConfig = None):
         super().__init__()
@@ -150,7 +150,7 @@ class HighPerformanceICKAN(nn.Module):
         
         return x
 
-class BasicICKAN(nn.Module):
+class BasicICKANinspired(nn.Module):
     
     
     def __init__(self, input_shape: Tuple[int, int, int], num_classes: int, config: ModelConfig = None):
@@ -255,9 +255,9 @@ def create_ickan_inspired_models(config: ModelConfig) -> nn.Module:
     model_type = getattr(config, 'model_type', 'high_performance')
     
     if model_type == 'high_performance':
-        return HighPerformanceICKAN(input_shape, num_classes, config)
+        return HighPerformanceICKANinspired(input_shape, num_classes, config)
     elif model_type == 'basic':
-        return BasicICKAN(input_shape, num_classes, config)
+        return BasicICKANinspired(input_shape, num_classes, config)
     else:
         raise ValueError(f"Unknown ICKAN model type: {model_type}")
 
