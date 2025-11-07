@@ -8,11 +8,11 @@ fsc22:
     
   # File paths
   path:
-    meta_data: '/home/dilshan/Documents/ESC/temp1/ESC_Meta/data/fsc22/FSC22.csv'
-    base_data: '/home/dilshan/Documents/ESC/temp1/ESC_Meta/data/fsc22/wav44'
-    plots: '/home/dilshan/Documents/ESC/temp1/ESC_Meta/plots/fsc22'
-    results: '/home/dilshan/Documents/ESC/temp1/ESC_Meta/results'
-    models: '/home/dilshan/Documents/ESC/temp1/ESC_Meta/models/saved'
+    meta_data: 'data/fsc22/FSC22.csv'
+    base_data: 'data/fsc22/wav44'
+    plots: 'plots/fsc22'
+    results: 'results'
+    models: 'models/saved'
     
   # Audio processing configuration
   audio:

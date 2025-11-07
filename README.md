@@ -15,6 +15,17 @@ cd ESC_Meta
 pip install -r requirements.txt
 ```
 
+3. Prepare your data structure:
+```
+ESC_Meta/
+├── data/
+│   └── fsc22/
+│       ├── FSC22.csv          # Dataset metadata
+│       ├── wav44/             # Audio files (.wav)
+│       └── Pickle_Files/      # Generated features (created automatically)
+└── ...
+```
+
 ## Usage
 
 ### 1. Feature Generation
@@ -25,8 +36,8 @@ Generate mel spectrogram features from audio files:
 # Basic usage (uses default settings)
 python generate_features.py
 
-# With custom paths [ stills paths has been hard coded ]
-python generate_features.py --csv-path /path/to/FSC22.csv --audio-path /path/to/wav44 --output /path/to/output
+# With custom paths (relative to project root - recommended)
+python generate_features.py --csv-path data/fsc22/FSC22.csv --audio-path data/fsc22/wav44 --output data/fsc22/Pickle_Files
 
 # Different feature types
 python generate_features.py --feature-type MEL    # Mel spectrograms (default)
@@ -46,7 +57,7 @@ python generate_features.py --preset aug_ts_ps_mel_features_5_20
 
 **Available Arguments:**
 - `--csv-path, -c`: Path to FSC22.csv file (default: data/fsc22/FSC22.csv)
-- `--audio-path, -a`: Path to audio files directory (default: data/fsc22/wav44)
+- `--audio-path, -a`: Path to audio files directory (default: data/fsc22/wav44)  
 - `--output, -o`: Output directory for features (default: data/fsc22/Pickle_Files)
 - `--feature-type, -f`: Feature type - MEL, MFCC, MIX (default: MEL)
 - `--augmentation, -aug`: Augmentation level 0-4 (default: 3)

@@ -16,6 +16,16 @@ import gc
 SAMPLE_RATE = 20000
 INPUT_LENGTH = SAMPLE_RATE * 5  # 5 seconds at 20kHz
 
+def get_project_root():
+    """Get the project root directory"""
+    return Path(__file__).parent
+
+def resolve_path(path_str):
+    """Resolve path relative to project root"""
+    if os.path.isabs(path_str):
+        return path_str
+    return str(get_project_root() / path_str)
+
 def random_crop(sound, size):
     
     org_size = len(sound)
@@ -244,15 +254,15 @@ def main():
     parser = argparse.ArgumentParser(description='Corrected FSC22 Feature Generation')
     
     parser.add_argument('--csv-path', '-c', type=str, 
-                       default='/home/dilshan/Documents/ESC/temp1/ESC_Meta/data/fsc22/FSC22.csv',
+                       default='data/fsc22/FSC22.csv',
                        help='Path to FSC22.csv file')
     
     parser.add_argument('--audio-path', '-a', type=str,
-                       default='/home/dilshan/Documents/ESC/temp1/ESC_Meta/data/fsc22/wav44',
+                       default='data/fsc22/wav44',
                        help='Path to audio files directory')
     
     parser.add_argument('--output', '-o', type=str,
-                       default='/home/dilshan/Documents/ESC/temp1/ESC_Meta/data/fsc22/Pickle_Files',
+                       default='data/fsc22/Pickle_Files',
                        help='Output directory for features')
     
     parser.add_argument('--feature-type', '-f', type=str, default='MEL',
@@ -276,8 +286,17 @@ def main():
         args.augmentation = 3
     
     try:
+        # Resolve paths to absolute paths relative to project root
+        csv_path = resolve_path(args.csv_path)
+        audio_path = resolve_path(args.audio_path)
+        output_path = resolve_path(args.output)
+        
+        print(f"Using paths:")
+        print(f"  CSV: {csv_path}")
+        print(f"  Audio: {audio_path}")
+        print(f"  Output: {output_path}")
 
-        audios = load_audio_files(args.csv_path, args.audio_path)
+        audios = load_audio_files(csv_path, audio_path)
         
         if not audios:
             print(" No audio files loaded!")
@@ -289,10 +308,10 @@ def main():
             print(" No features generated!")
             return
         
-        output_path = save_features(spects, args.output, args.feature_type, args.augmentation)
+        final_output_path = save_features(spects, output_path, args.feature_type, args.augmentation)
         
         print(f"\n Feature generation completed successfully!")
-        print(f" Output: {output_path}")
+        print(f" Output: {final_output_path}")
         
     except Exception as e:
         print(f" Error during feature generation: {e}")

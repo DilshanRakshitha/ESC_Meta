@@ -14,7 +14,7 @@ from utils.data_prep import DataPreprocessor
 
 def load_fsc22_folds(model_name: str = None):
     
-    data_path = "/home/dilshan/Documents/ESC/temp1/ESC_Meta/data/fsc22/Pickle_Files/aug_ts_ps_mel_features_5_20"
+    data_path = "data/fsc22/Pickle_Files/aug_ts_ps_mel_features_5_20"
     
     try:
         preprocessor = DataPreprocessor(data_path)
