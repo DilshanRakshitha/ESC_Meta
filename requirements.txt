@@ -1,50 +1,14 @@
-# ESC_Meta Requirements
-# Core deep learning frameworks
-torch>=1.13.0
-torchvision>=0.14.0
+torch>=1.13.0torchvision>=0.14.0
 torchaudio>=0.13.0
-tensorflow>=2.13.0
-
-# Scientific computing
 numpy>=1.21.0
 pandas>=1.3.0
 scipy>=1.7.0
-
-# Machine learning
 scikit-learn>=1.0.0
 optuna>=3.0.0
-
-# Audio processing
 librosa>=0.9.0
 soundfile>=0.10.0
 audiomentations>=1.4.0
-
-# FSC Original improvements
-# Multi-scale feature extraction support
-# Enhanced data augmentation capabilities
-
-# Visualization
 matplotlib>=3.5.0
 seaborn>=0.11.0
-
-# Progress tracking
 tqdm>=4.64.0
-
-# Hyperparameter optimization
-optuna>=3.0.0
-
-# Configuration management
 PyYAML>=6.0
-
-# Jupyter support (optional)
-jupyter>=1.0.0
-ipykernel>=6.0.0
-
-# Model optimization (optional)
-tensorflow>=2.10.0  # For TensorFlow-based quantization
-openvino>=2022.3.0  # For Intel OpenVINO optimization
-
-# Development tools (optional)
-pytest>=7.0.0
-black>=22.0.0
-flake8>=4.0.0
