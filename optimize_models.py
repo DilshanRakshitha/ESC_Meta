@@ -12,7 +12,7 @@ from optimization.optimization_config import OptimizationConfig
 
 from models.architectures.AlexNet import AlexNet
 from models.architectures.KAN_inspired_models import create_high_performance_kan_inspired
-from models.architectures.ickan_models import create_high_performance_ickan
+from models.architectures.ICKAN_inspired_models import create_high_performance_ickan_inspired_model
 from models.architectures.wavkan_models import create_high_performance_wavkan
 
 def create_alexnet_factory():
@@ -56,7 +56,7 @@ def create_ickan_factory():
             ickan_input_shape = (input_shape[1], input_shape[2], input_shape[0])
         else:
             ickan_input_shape = input_shape
-        return create_high_performance_ickan(ickan_input_shape, num_classes)
+        return create_high_performance_ickan_inspired_model(ickan_input_shape, num_classes)
     
     factory.__name__ = 'create_ickan'
     return factory

@@ -216,6 +216,6 @@ def create_ickan(input_shape, num_classes=26, variant="standard"):
     else:
         return ICKAN(input_shape, num_classes)
 
-def create_ickan_model(input_shape, num_classes=26):
+def create_ickan_inspired_models(input_shape, num_classes=26):
     """Backward compatibility function"""
     return ICKAN(input_shape, num_classes)

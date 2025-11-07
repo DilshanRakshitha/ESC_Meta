@@ -20,13 +20,11 @@ class ResidualKANBlock(nn.Module):
         self.conv2 = nn.Conv2d(out_channels, out_channels, 3, padding=1)
         self.bn2 = nn.BatchNorm2d(out_channels)
         
-        # KAN-inspired nonlinear activations
         self.kan_activation = nn.Sequential(
             nn.SiLU(),
             nn.Dropout2d(dropout)
         )
         
-        # Skip connection
         self.skip = nn.Conv2d(in_channels, out_channels, 1) if in_channels != out_channels else nn.Identity()
         
     def forward(self, x):
@@ -52,7 +50,6 @@ class HighPerformanceKANinspired(nn.Module):
         h, w, c = input_shape
         self.config = config or ModelConfig()
         
-        # Multi-scale feature extraction (inspired by EfficientNet + KAN)
         self.stem = nn.Sequential(
             nn.Conv2d(c, 32, 7, stride=2, padding=3),
             nn.BatchNorm2d(32),
@@ -60,7 +57,6 @@ class HighPerformanceKANinspired(nn.Module):
             nn.MaxPool2d(2)
         )
         
-        # Residual blocks with KAN activations
         dropout = getattr(self.config, 'dropout_rate', 0.1)
         
         self.block1 = ResidualKANBlock(32, 64, dropout)
@@ -72,7 +68,6 @@ class HighPerformanceKANinspired(nn.Module):
         self.block3 = ResidualKANBlock(128, 256, dropout)
         self.pool3 = nn.AdaptiveAvgPool2d((4, 4))
         
-        # Calculate flattened size
         with torch.no_grad():
             dummy = torch.zeros(1, c, h, w)
             dummy_out = self.stem(dummy)
@@ -81,7 +76,6 @@ class HighPerformanceKANinspired(nn.Module):
             dummy_out = self.pool3(self.block3(dummy_out))
             flattened_size = dummy_out.numel()
         
-        # Advanced classifier with KAN-inspired nonlinearities
         hidden_dim = getattr(self.config, 'hidden_dim', 512)
         
         self.classifier = nn.Sequential(
@@ -118,7 +112,7 @@ class HighPerformanceKANinspired(nn.Module):
             nn.init.constant_(m.bias, 0)
         
     def forward(self, x):
-        # Ensure correct input format (B,C,H,W)
+
         if x.dim() == 4 and x.shape[1] != 3:
             x = x.permute(0, 3, 1, 2)
         
@@ -147,7 +141,6 @@ class BasicKANinpired(nn.Module):
         h, w, c = input_shape
         self.config = config or ModelConfig()
         
-        # Simple CNN backbone
         self.features = nn.Sequential(
             nn.Conv2d(c, 32, 3, padding=1),
             nn.BatchNorm2d(32),
@@ -165,13 +158,11 @@ class BasicKANinpired(nn.Module):
             nn.AdaptiveAvgPool2d((4, 4))
         )
         
-        # Calculate flattened size
         with torch.no_grad():
             dummy = torch.zeros(1, c, h, w)
             dummy_out = self.features(dummy)
             flattened_size = dummy_out.numel()
         
-        # KAN-inspired classifier
         self.classifier = nn.Sequential(
             nn.Linear(flattened_size, 256),
             nn.SiLU(),
