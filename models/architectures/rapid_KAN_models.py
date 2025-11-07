@@ -1,8 +1,3 @@
-"""
-Fast-Learning Superior KAN Implementation
-Optimized for rapid convergence and high performance
-"""
-
 import torch
 import torch.nn.functional as F
 import math
@@ -26,7 +21,7 @@ class FastLearningKANLinear(KANLinear):
         base_activation=torch.nn.SiLU,
         grid_eps=0.01,
         grid_range=[-2, 2],      # Moderate range
-        prob_update_grid=-0.001,  # Disable grid updates for stability (like exact KAN)
+        prob_update_grid=-0.001,  # Disable grid updates for stability
         learning_rate_multiplier=1.0
     ):
         self.learning_rate_multiplier = learning_rate_multiplier
@@ -40,7 +35,7 @@ class FastLearningKANLinear(KANLinear):
         self.fast_initialization()
         
     def fast_initialization(self):
-        """Initialization optimized for faster convergence"""
+        
         # Stronger base weight initialization
         torch.nn.init.kaiming_uniform_(self.base_weight, a=math.sqrt(5), mode='fan_in')
         self.base_weight.data *= 1.5  # Boost initial weights
@@ -66,14 +61,11 @@ class FastLearningKANLinear(KANLinear):
 
 
 class RapidESC_KAN(torch.nn.Module):
-    """
-    Rapid-learning KAN optimized for fast convergence to >90% accuracy
-    Balances expressiveness with learning speed
-    """
+    
     def __init__(self,
                  input_shape,
                  num_classes=26,
-                 architecture='efficient',     # 'efficient', 'powerful', 'lightweight'
+                 architecture='efficient',
                  dropout_rate=0.1,
                  batch_norm=True,
                  residual_connections=True):
@@ -83,9 +75,9 @@ class RapidESC_KAN(torch.nn.Module):
         self.architecture = architecture
         self.residual_connections = residual_connections
         
-        # Efficient CNN frontend for feature extraction
+        
         self.cnn_frontend = torch.nn.Sequential(
-            # Efficient feature extraction
+            
             torch.nn.Conv2d(c, 64, kernel_size=5, stride=2, padding=2),
             torch.nn.BatchNorm2d(64) if batch_norm else torch.nn.Identity(),
             torch.nn.ReLU(True),
@@ -95,19 +87,18 @@ class RapidESC_KAN(torch.nn.Module):
             torch.nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1),
             torch.nn.BatchNorm2d(256) if batch_norm else torch.nn.Identity(),
             torch.nn.ReLU(True),
-            torch.nn.AdaptiveAvgPool2d((4, 4))  # Fixed small output
+            torch.nn.AdaptiveAvgPool2d((4, 4))
         )
         
-        cnn_output_features = 256 * 4 * 4  # 4096 features
+        cnn_output_features = 256 * 4 * 4
         
-        # Architecture-specific KAN layers
         if architecture == 'efficient':
             kan_layers = [2048, 512, 128]
             grid_size = 10
         elif architecture == 'powerful':
             kan_layers = [2048, 1024, 256]
             grid_size = 15
-        else:  # lightweight
+        else:
             kan_layers = [1024, 256]
             grid_size = 8
         
@@ -119,7 +110,6 @@ class RapidESC_KAN(torch.nn.Module):
             torch.nn.Dropout(dropout_rate)
         )
         
-        # Build fast-learning KAN layers
         layers_hidden = kan_layers + [num_classes]
         
         self.kan_layers = torch.nn.ModuleList()
@@ -128,7 +118,7 @@ class RapidESC_KAN(torch.nn.Module):
         self.residual_projections = torch.nn.ModuleList()
         
         for i, (in_f, out_f) in enumerate(zip(layers_hidden[:-1], layers_hidden[1:])):
-            # Fast-learning KAN layer
+            
             kan_layer = FastLearningKANLinear(
                 in_f, out_f,
                 grid_size=grid_size,
@@ -177,7 +167,7 @@ class RapidESC_KAN(torch.nn.Module):
         
         # CNN feature extraction
         x = self.cnn_frontend(x)
-        x = x.reshape(x.size(0), -1)  # Use reshape instead of view for safety
+        x = x.reshape(x.size(0), -1)
         
         # Input projection
         x = self.input_projection(x)
@@ -205,7 +195,7 @@ class RapidESC_KAN(torch.nn.Module):
         return x
 
     def get_optimizer_params(self, base_lr=0.001):
-        """Get optimized parameters for different parts of the network"""
+        
         cnn_params = list(self.cnn_frontend.parameters()) + list(self.input_projection.parameters())
         kan_params = []
         other_params = []
@@ -225,15 +215,13 @@ class RapidESC_KAN(torch.nn.Module):
         
         return [
             {'params': cnn_params, 'lr': base_lr},
-            {'params': kan_params, 'lr': base_lr * 3.0},  # Higher LR for KAN layers
+            {'params': kan_params, 'lr': base_lr * 3.0},
             {'params': other_params, 'lr': base_lr * 1.5}
         ]
 
 
 def create_rapid_kan(input_shape, num_classes=26, performance='efficient'):
     """
-    Create Rapid KAN optimized for fast learning to >90% accuracy
-    
     Args:
         performance: 'lightweight', 'efficient', 'powerful'
     """

@@ -125,13 +125,13 @@ def create_model_factory(model_name: str, num_classes: int = 26):
         
         # ========== RAPID KAN ARCHITECTURES (Fast Learning) ==========
         elif model_name_lower == 'rapid_kan':
-            from models.architectures.rapid_kan_models import create_rapid_kan
+            from models.architectures.rapid_KAN_models import create_rapid_kan
             return create_rapid_kan(input_shape, num_classes, performance='efficient')
         elif model_name_lower == 'rapid_kan_lite' :
-            from models.architectures.rapid_kan_models import create_rapid_kan
+            from models.architectures.rapid_KAN_models import create_rapid_kan
             return create_rapid_kan(input_shape, num_classes, performance='lightweight')
         elif model_name_lower == 'rapid_kan_power' :
-            from models.architectures.rapid_kan_models import create_rapid_kan
+            from models.architectures.rapid_KAN_models import create_rapid_kan
             return create_rapid_kan(input_shape, num_classes, performance='powerful')
         
         else:
