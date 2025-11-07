@@ -14,7 +14,6 @@ class MobileNetV3Small(nn.Module):
         else:
             self.backbone = mobilenet_v3_small(pretrained=False)
         
-        # Modify first layer if input channels != 3
         if input_channels != 3:
             original_conv = self.backbone.features[0][0]
             self.backbone.features[0][0] = nn.Conv2d(
@@ -26,9 +25,9 @@ class MobileNetV3Small(nn.Module):
                 bias=False
             )
             
-            # Initialize new conv layer
+            
             if pretrained and input_channels == 1:
-                # For grayscale, use mean of RGB weights
+                
                 with torch.no_grad():
                     self.backbone.features[0][0].weight = nn.Parameter(
                         original_conv.weight.mean(dim=1, keepdim=True)
@@ -36,7 +35,7 @@ class MobileNetV3Small(nn.Module):
         
         num_features = self.backbone.classifier[0].in_features
         
-        # Replace classifier with custom head
+        
         self.backbone.classifier = nn.Sequential(
             nn.Linear(num_features, 512),
             nn.Hardswish(inplace=True),
@@ -85,7 +84,7 @@ def create_mobilenet_v3_small(num_classes=26, pretrained=True, input_channels=3,
     )
 
 class MobileNetV3Large(nn.Module):
-    """MobileNetV3-Large for higher accuracy"""
+    
     def __init__(self, num_classes=26, pretrained=True, input_channels=3, dropout_rate=0.2):
         super(MobileNetV3Large, self).__init__()
         from torchvision.models import mobilenet_v3_large
@@ -124,5 +123,5 @@ class MobileNetV3Large(nn.Module):
 
 
 def create_mobilenet_v3_large(num_classes=26, pretrained=True, input_channels=3, dropout_rate=0.2):
-    """Factory function for MobileNetV3-Large"""
+    
     return MobileNetV3Large(num_classes, pretrained, input_channels, dropout_rate)
