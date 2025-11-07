@@ -21,8 +21,8 @@ sys.path.extend([
     str(project_root / 'models' / 'architectures'),
 ])
 
-from optimization.hyperparameter_tuner import OptunaTuner
-from optimization.config import OptimizationConfig, OptimizationPresets, MODEL_STRATEGIES
+from optimization.hyperparameter_optimizer import HyperparameterOptimizer
+from optimization.optimization_config import OptimizationConfig
 
 class FSCMetaOptimizer:
     """
@@ -66,10 +66,8 @@ class FSCMetaOptimizer:
         
         # Initialize optimization components
         self.optimization_config = OptimizationConfig()
-        self.tuner = OptunaTuner(
-            model_factory=self.model_factory,
-            data_loader=self.data_loader,
-            results_dir="optimization/results"
+        self.optimizer = HyperparameterOptimizer(
+            config=OptimizationConfig()
         )
         
         # Load existing configuration if available

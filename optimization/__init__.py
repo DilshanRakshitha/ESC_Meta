@@ -1,8 +1,3 @@
-"""
-Hyperparameter Optimization Module
-Modular and configurable optimization system using Optuna
-"""
-
 from .hyperparameter_optimizer import HyperparameterOptimizer
 from .optimization_config import OptimizationConfig
 from .objective_function import ObjectiveFunction
