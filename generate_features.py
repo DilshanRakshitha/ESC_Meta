@@ -254,11 +254,11 @@ def main():
     parser = argparse.ArgumentParser(description='Corrected FSC22 Feature Generation')
     
     parser.add_argument('--csv-path', '-c', type=str, 
-                       default='data/fsc22/FSC22.csv',
+                       default='data/FSC22.csv',
                        help='Path to FSC22.csv file')
     
     parser.add_argument('--audio-path', '-a', type=str,
-                       default='data/fsc22/wav44',
+                       default='data/wav44',
                        help='Path to audio files directory')
     
     parser.add_argument('--output', '-o', type=str,
