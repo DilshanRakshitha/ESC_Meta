@@ -13,7 +13,7 @@ from optimization.optimization_config import OptimizationConfig
 from models.architectures.AlexNet import AlexNet
 from models.architectures.KAN_inspired_models import create_high_performance_kan_inspired
 from models.architectures.ICKAN_inspired_models import create_high_performance_ickan_inspired_model
-from models.architectures.wavkan_models import create_high_performance_wavkan
+from models.architectures.WavKAN_inspired_models import create_high_performance_wavkan_inspired_model
 
 def create_alexnet_factory():
     """Factory function for AlexNet"""
@@ -69,7 +69,7 @@ def create_wavkan_factory():
             wavkan_input_shape = (input_shape[1], input_shape[2], input_shape[0])
         else:
             wavkan_input_shape = input_shape
-        return create_high_performance_wavkan(wavkan_input_shape, num_classes)
+        return create_high_performance_wavkan_inspired_model(wavkan_input_shape, num_classes)
     
     factory.__name__ = 'create_wavkan'
     return factory

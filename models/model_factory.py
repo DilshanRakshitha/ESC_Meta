@@ -39,8 +39,8 @@ class SimpleModelFactory:
             from models.architectures.ICKAN_inspired_models import create_high_performance_ickan_inspired_model
             return create_high_performance_ickan_inspired_model(input_shape, num_classes)
         elif model_name == 'wavkan_inspired' :
-            from models.architectures.wavkan_models import create_high_performance_wavkan
-            return create_high_performance_wavkan(input_shape, num_classes)
+            from models.architectures.WavKAN_inspired_models import create_high_performance_wavkan_inspired_model
+            return create_high_performance_wavkan_inspired_model(input_shape, num_classes)
         
         # ========== KAN ARCHITECTURES ==========
         elif model_name == 'kan' :
