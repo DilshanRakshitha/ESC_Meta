@@ -8,3 +8,7 @@
 __pycache__/
 /optimization/plots/*
 optimization/optuna_study.db
+data
+optimization/plots
+optimization/logs
+optimization/results

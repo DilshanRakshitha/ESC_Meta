@@ -1,8 +1,3 @@
-"""
-DenseNet121 Architecture for Audio Classification
-Densely Connected Convolutional Networks adapted for spectrograms
-"""
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -10,19 +5,15 @@ from torchvision.models import densenet121
 import warnings
 
 class DenseNet121(nn.Module):
-    """
-    DenseNet121 adapted for audio spectrogram classification
-    """
+    
     def __init__(self, num_classes=26, pretrained=True, input_channels=3):
         super(DenseNet121, self).__init__()
         
-        # Load pretrained DenseNet121
         if pretrained:
             self.backbone = densenet121(pretrained=True)
         else:
             self.backbone = densenet121(pretrained=False)
         
-        # Modify first layer if input channels != 3
         if input_channels != 3:
             original_conv = self.backbone.features.conv0
             self.backbone.features.conv0 = nn.Conv2d(
@@ -37,10 +28,8 @@ class DenseNet121(nn.Module):
                         original_conv.weight.mean(dim=1, keepdim=True)
                     )
         
-        # Get number of features from DenseNet classifier
         num_features = self.backbone.classifier.in_features
         
-        # Replace classifier
         self.backbone.classifier = nn.Sequential(
             nn.Dropout(0.5),
             nn.Linear(num_features, 512),
@@ -64,8 +53,6 @@ class DenseNet121(nn.Module):
 
 def create_densenet121(num_classes=26, pretrained=True, input_channels=3):
     """
-    Factory function to create DenseNet121 model
-    
     Args:
         num_classes: Number of output classes
         pretrained: Whether to use ImageNet pretrained weights
@@ -79,9 +66,3 @@ def create_densenet121(num_classes=26, pretrained=True, input_channels=3):
         pretrained=pretrained,
         input_channels=input_channels
     )
-
-
-# For backward compatibility
-class FSCDenseNet121(DenseNet121):
-    """Legacy class name for compatibility"""
-    pass

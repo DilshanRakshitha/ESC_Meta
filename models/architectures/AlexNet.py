@@ -31,10 +31,8 @@ class AlexNet(nn.Module):
 
         self.Flatten = nn.Flatten()
         
-        # Adaptive pooling to handle variable input sizes
         self.adaptive_pool = nn.AdaptiveAvgPool2d((6, 6))
         
-        # Calculate the size after adaptive pooling: 256 * 6 * 6
         self.Dense_1 = nn.Linear(256 * 6 * 6, 1024)
         self.Dropout_1 = nn.Dropout(0.5)
 
@@ -64,7 +62,6 @@ class AlexNet(nn.Module):
 
         x = self.MaxPool_3(x)
         
-        # Apply adaptive pooling to handle variable input sizes
         x = self.adaptive_pool(x)
 
         x = self.Flatten(x)

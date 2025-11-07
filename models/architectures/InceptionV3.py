@@ -1,8 +1,3 @@
-"""
-InceptionV3 Architecture for Audio Classification
-Inception Networks adapted for spectrograms
-"""
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -10,18 +5,14 @@ from torchvision.models import inception_v3
 import warnings
 
 class InceptionV3(nn.Module):
-    """
-    InceptionV3 adapted for audio spectrogram classification
-    """
+   
     def __init__(self, num_classes=26, pretrained=True, input_channels=3, dropout_rate=0.5):
         super(InceptionV3, self).__init__()
         
-        # Load pretrained InceptionV3
-        # Note: newer torchvision versions force aux_logits=True for pretrained models
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             if pretrained:
-                self.backbone = inception_v3(weights='IMAGENET1K_V1')  # aux_logits=True by default
+                self.backbone = inception_v3(weights='IMAGENET1K_V1')
             else:
                 self.backbone = inception_v3(weights=None, aux_logits=False)
         
@@ -40,7 +31,6 @@ class InceptionV3(nn.Module):
                         original_conv.weight.mean(dim=1, keepdim=True)
                     )
         
-        # Get number of features from InceptionV3 classifier
         num_features = self.backbone.fc.in_features
         
         # Replace classifier with custom head
@@ -57,21 +47,17 @@ class InceptionV3(nn.Module):
             nn.Linear(512, num_classes)
         )
         
-        # Store configuration
         self.num_classes = num_classes
         self.input_channels = input_channels
         self.dropout_rate = dropout_rate
         
-        # Disable auxiliary classifier during training
         self.training_mode = True
         
     def forward(self, x):
-        # InceptionV3 requires input size to be at least 299x299
-        # Resize if needed
+        
         if x.shape[-1] < 299 or x.shape[-2] < 299:
             x = F.interpolate(x, size=(299, 299), mode='bilinear', align_corners=False)
         
-        # Handle auxiliary logits output
         if self.training and hasattr(self.backbone, 'AuxLogits'):
             # During training, backbone returns (main_output, aux_output)
             output = self.backbone(x)
@@ -84,7 +70,7 @@ class InceptionV3(nn.Module):
             return self.backbone(x)
     
     def get_feature_maps(self, x):
-        """Extract feature maps before final classification"""
+        
         # Resize if needed
         if x.shape[-1] < 299 or x.shape[-2] < 299:
             x = F.interpolate(x, size=(299, 299), mode='bilinear', align_corners=False)
@@ -119,8 +105,6 @@ class InceptionV3(nn.Module):
 
 def create_inception_v3(num_classes=26, pretrained=True, input_channels=3, dropout_rate=0.5):
     """
-    Factory function to create InceptionV3 model
-    
     Args:
         num_classes: Number of output classes
         pretrained: Whether to use ImageNet pretrained weights
@@ -136,9 +120,3 @@ def create_inception_v3(num_classes=26, pretrained=True, input_channels=3, dropo
         input_channels=input_channels,
         dropout_rate=dropout_rate
     )
-
-
-# For backward compatibility
-class FSCInceptionV3(InceptionV3):
-    """Legacy class name for compatibility"""
-    pass

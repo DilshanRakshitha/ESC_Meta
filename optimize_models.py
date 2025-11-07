@@ -1,145 +1,150 @@
-"""
-ESC Meta - Hyperparameter Optimization Integration
-Example script showing how to use the optimization system
-"""
-
 import sys
 import argparse
 import numpy as np
 from pathlib import Path
 
-# Add project root to path
 project_root = Path(__file__).parent
 sys.path.append(str(project_root))
 
-# Import your existing modules
-from main import FSCMetaMain
+from main import load_fsc22_folds
 from optimization.hyperparameter_optimizer import HyperparameterOptimizer
 from optimization.optimization_config import OptimizationConfig
 
-# Import model factories
 from models.architectures.AlexNet import AlexNet
-from models.architectures.kan_models import create_high_performance_kan
-from models.architectures.ickan_models import create_high_performance_ickan
-from models.architectures.wavkan_models import create_high_performance_wavkan
+try:
+    from models.architectures.KAN_inspired_models import create_high_performance_kan_inspired
+except ImportError:
+    print("Warning: Could not import KAN models")
+    create_high_performance_kan_inspired = None
+    
+try:
+    from models.architectures.ICKAN_inspired_models import create_high_performance_ickan_inspired_model
+except ImportError:
+    print("Warning: Could not import ICKAN models")
+    create_high_performance_ickan_inspired_model = None
+    
+try:
+    from models.architectures.WavKAN_inspired_models import create_high_performance_wavkan_inspired_model
+except ImportError:
+    print("Warning: Could not import WavKAN models")
+    create_high_performance_wavkan_inspired_model = None
 
 def create_alexnet_factory():
-    """Factory function for AlexNet"""
     def factory(input_shape, num_classes, **kwargs):
         input_channels = input_shape[0] if len(input_shape) == 3 else 3
         dropout_rate = kwargs.get('dropout_rate', 0.5)
-        
-        # Create AlexNet and modify dropout if needed
         model = AlexNet(input_size=input_channels, num_classes=num_classes)
-        
-        # Update dropout rates if specified
         if hasattr(model, 'Dropout_1'):
             model.Dropout_1.p = dropout_rate
         if hasattr(model, 'Dropout_2'):
             model.Dropout_2.p = dropout_rate
-            
         return model
-    
     factory.__name__ = 'create_alexnet'
     return factory
 
 def create_kan_factory():
-    """Factory function for KAN"""
+    if create_high_performance_kan_inspired is None:
+        raise ValueError("KAN models not available")
     def factory(input_shape, num_classes, **kwargs):
-        # Convert (C, H, W) to (H, W, C) for KAN
         if len(input_shape) == 3:
             kan_input_shape = (input_shape[1], input_shape[2], input_shape[0])
         else:
             kan_input_shape = input_shape
-        return create_high_performance_kan(kan_input_shape, num_classes)
-    
+        return create_high_performance_kan_inspired(kan_input_shape, num_classes)
     factory.__name__ = 'create_kan'
     return factory
 
 def create_ickan_factory():
-    """Factory function for ICKAN"""
+    if create_high_performance_ickan_inspired_model is None:
+        raise ValueError("ICKAN models not available")
     def factory(input_shape, num_classes, **kwargs):
-        # Convert (C, H, W) to (H, W, C) for ICKAN
         if len(input_shape) == 3:
             ickan_input_shape = (input_shape[1], input_shape[2], input_shape[0])
         else:
             ickan_input_shape = input_shape
-        return create_high_performance_ickan(ickan_input_shape, num_classes)
-    
+        return create_high_performance_ickan_inspired_model(ickan_input_shape, num_classes)
     factory.__name__ = 'create_ickan'
     return factory
 
 def create_wavkan_factory():
-    """Factory function for WavKAN"""
+    if create_high_performance_wavkan_inspired_model is None:
+        raise ValueError("WavKAN models not available")
     def factory(input_shape, num_classes, **kwargs):
-        # Convert (C, H, W) to (H, W, C) for WavKAN
         if len(input_shape) == 3:
             wavkan_input_shape = (input_shape[1], input_shape[2], input_shape[0])
         else:
             wavkan_input_shape = input_shape
-        return create_high_performance_wavkan(wavkan_input_shape, num_classes)
-    
+        return create_high_performance_wavkan_inspired_model(wavkan_input_shape, num_classes)
     factory.__name__ = 'create_wavkan'
     return factory
 
-def load_data():
-    """Load data using existing FSCMetaMain pipeline"""
-    print("📂 Loading data using FSCMetaMain pipeline...")
+def load_data(model_name='alexnet'):
+    print("Loading FSC22 data for optimization...")
+    result = load_fsc22_folds()
+    if not result:
+        raise ValueError("Failed to load FSC22 data")
     
-    pipeline = FSCMetaMain()
-    features, labels = pipeline.load_data('auto')
+    folds_data = result['folds_data']
+    all_features = []
+    all_labels = []
     
-    print(f"✅ Data loaded: {len(features)} samples, {len(np.unique(labels))} classes")
-    print(f"📏 Feature shape: {features.shape}")
+    for fold_name, fold_data in folds_data.items():
+        for feature, label in fold_data:
+            all_features.append(feature)
+            all_labels.append(label)
     
+    features = np.array(all_features)
+    labels = np.array(all_labels)
+    
+    # Apply same dimension transformation as in training
+    is_kan_model = 'kan' in model_name.lower()
+    if len(features.shape) == 4 and features.shape[-1] == 3 and not is_kan_model:
+        # CNN models expect (batch, channels, height, width) format
+        features = np.transpose(features, (0, 3, 1, 2))  # (B,H,W,C) -> (B,C,H,W)
+        print(f"Transposed features for CNN model: {features.shape}")
+    
+    print(f"Data loaded: {len(features)} samples, {len(np.unique(labels))} classes")
+    print(f"Feature shape: {features.shape}")
     return features, labels
 
 def optimize_model(model_name: str, config_type: str = 'standard'):
-    """
-    Optimize hyperparameters for a specific model
-    
-    Args:
-        model_name: 'alexnet', 'kan', 'ickan', or 'wavkan'
-        config_type: 'quick', 'standard', or 'extensive'
-    """
-    print(f"\n🚀 Starting hyperparameter optimization for {model_name.upper()}")
-    print(f"🔧 Configuration: {config_type}")
+    print(f"\nStarting hyperparameter optimization for {model_name.upper()}")
+    print(f"Configuration: {config_type}")
     print("=" * 70)
+    features, labels = load_data(model_name)
     
-    # Load data
-    features, labels = load_data()
+    factories = {}
+    factories['alexnet'] = create_alexnet_factory()
     
-    # Create model factory
-    factories = {
-        'alexnet': create_alexnet_factory(),
-        'kan': create_kan_factory(),
-        'ickan': create_ickan_factory(),
-        'wavkan': create_wavkan_factory()
-    }
+    try:
+        factories['kan'] = create_kan_factory()
+    except ValueError as e:
+        print(f"KAN not available: {e}")
+    
+    try:
+        factories['ickan'] = create_ickan_factory()
+    except ValueError as e:
+        print(f"ICKAN not available: {e}")
+        
+    try:
+        factories['wavkan'] = create_wavkan_factory()
+    except ValueError as e:
+        print(f"WavKAN not available: {e}")
     
     if model_name not in factories:
-        raise ValueError(f"Unknown model: {model_name}. Choose from: {list(factories.keys())}")
+        available_models = list(factories.keys())
+        raise ValueError(f"Model '{model_name}' not available. Choose from: {available_models}")
     
     model_factory = factories[model_name]
-    
-    # Load appropriate configuration
     config_path = "config/optimization_configs.yml"
-    
-    # Create optimizer
     optimizer = HyperparameterOptimizer(config_path)
-    
-    # Switch to appropriate mode
     if config_type == 'quick':
         optimizer.quick_test_mode()
     elif config_type == 'extensive':
         optimizer.extensive_tuning_mode()
-    
-    # Run optimization
     results = optimizer.optimize(model_factory, (features, labels), model_name)
-    
-    # Print final results
     if 'error' not in results:
-        print(f"\n🏆 OPTIMIZATION COMPLETED FOR {model_name.upper()}")
+        print(f"\nOPTIMIZATION COMPLETED FOR {model_name.upper()}")
         print("=" * 70)
         print(f"Best accuracy: {results['best_score']:.4f} ± {results['cv_std']:.4f}")
         print(f"Best parameters:")
@@ -148,58 +153,45 @@ def optimize_model(model_name: str, config_type: str = 'standard'):
         print(f"\nResults saved in: optimization/logs/")
         print(f"Plots saved in: optimization/plots/")
     else:
-        print(f"❌ Optimization failed: {results['error']}")
-    
+        print(f"Optimization failed: {results['error']}")
     return results
 
 def optimize_all_models(config_type: str = 'quick'):
-    """Optimize all models"""
     models = ['alexnet', 'kan', 'ickan', 'wavkan']
     results = {}
-    
-    print(f"\n🔥 OPTIMIZING ALL MODELS ({config_type.upper()} MODE)")
+    print(f"\nOPTIMIZING ALL MODELS ({config_type.upper()} MODE)")
     print("=" * 80)
-    
     for model_name in models:
         try:
             results[model_name] = optimize_model(model_name, config_type)
         except Exception as e:
-            print(f"❌ Failed to optimize {model_name}: {e}")
+            print(f"Failed to optimize {model_name}: {e}")
             results[model_name] = {'error': str(e)}
-    
-    # Print summary
-    print(f"\n📊 OPTIMIZATION SUMMARY")
+    print(f"\nOPTIMIZATION SUMMARY")
     print("=" * 80)
     for model_name, result in results.items():
         if 'error' not in result:
             print(f"{model_name.upper():>10}: {result['best_score']:.4f} ± {result['cv_std']:.4f}")
         else:
             print(f"{model_name.upper():>10}: FAILED")
-    
     return results
 
 def main():
-    """Main function"""
     parser = argparse.ArgumentParser(description='ESC Meta Hyperparameter Optimization')
     parser.add_argument('--model', type=str, choices=['alexnet', 'kan', 'ickan', 'wavkan', 'all'],
                        default='alexnet', help='Model to optimize')
     parser.add_argument('--config', type=str, choices=['quick', 'standard', 'extensive'],
                        default='quick', help='Optimization configuration')
-    
     args = parser.parse_args()
-    
-    print("🎯 ESC Meta - Hyperparameter Optimization")
+    print("ESC Meta - Hyperparameter Optimization")
     print("=" * 50)
     print(f"Model: {args.model}")
     print(f"Config: {args.config}")
-    
     if args.model == 'all':
         results = optimize_all_models(args.config)
     else:
         results = optimize_model(args.model, args.config)
-    
-    print("\n✅ Optimization pipeline completed!")
-    
+    print("\nOptimization pipeline completed!")
     return results
 
 if __name__ == "__main__":

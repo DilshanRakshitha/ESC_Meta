@@ -1,8 +1,3 @@
-"""
-MobileNetV3-Small Architecture for Audio Classification
-Efficient Mobile Networks adapted for spectrograms
-"""
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -10,20 +5,15 @@ from torchvision.models import mobilenet_v3_small
 import warnings
 
 class MobileNetV3Small(nn.Module):
-    """
-    MobileNetV3-Small adapted for audio spectrogram classification
-    Lightweight model suitable for mobile/edge deployment
-    """
+    
     def __init__(self, num_classes=26, pretrained=True, input_channels=3, dropout_rate=0.2):
         super(MobileNetV3Small, self).__init__()
         
-        # Load pretrained MobileNetV3-Small
         if pretrained:
             self.backbone = mobilenet_v3_small(pretrained=True)
         else:
             self.backbone = mobilenet_v3_small(pretrained=False)
         
-        # Modify first layer if input channels != 3
         if input_channels != 3:
             original_conv = self.backbone.features[0][0]
             self.backbone.features[0][0] = nn.Conv2d(
@@ -35,18 +25,17 @@ class MobileNetV3Small(nn.Module):
                 bias=False
             )
             
-            # Initialize new conv layer
+            
             if pretrained and input_channels == 1:
-                # For grayscale, use mean of RGB weights
+                
                 with torch.no_grad():
                     self.backbone.features[0][0].weight = nn.Parameter(
                         original_conv.weight.mean(dim=1, keepdim=True)
                     )
         
-        # Get number of features from MobileNet classifier
         num_features = self.backbone.classifier[0].in_features
         
-        # Replace classifier with custom head
+        
         self.backbone.classifier = nn.Sequential(
             nn.Linear(num_features, 512),
             nn.Hardswish(inplace=True),
@@ -57,7 +46,6 @@ class MobileNetV3Small(nn.Module):
             nn.Linear(256, num_classes)
         )
         
-        # Store configuration
         self.num_classes = num_classes
         self.input_channels = input_channels
         self.dropout_rate = dropout_rate
@@ -66,21 +54,19 @@ class MobileNetV3Small(nn.Module):
         return self.backbone(x)
     
     def get_feature_maps(self, x):
-        """Extract feature maps before final classification"""
+        
         x = self.backbone.features(x)
         x = self.backbone.avgpool(x)
         x = torch.flatten(x, 1)
         return x
     
     def count_parameters(self):
-        """Count the number of parameters in the model"""
+        
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
 
 def create_mobilenet_v3_small(num_classes=26, pretrained=True, input_channels=3, dropout_rate=0.2):
     """
-    Factory function to create MobileNetV3-Small model
-    
     Args:
         num_classes: Number of output classes
         pretrained: Whether to use ImageNet pretrained weights
@@ -97,10 +83,8 @@ def create_mobilenet_v3_small(num_classes=26, pretrained=True, input_channels=3,
         dropout_rate=dropout_rate
     )
 
-
-# Additional MobileNet variant
 class MobileNetV3Large(nn.Module):
-    """MobileNetV3-Large for higher accuracy"""
+    
     def __init__(self, num_classes=26, pretrained=True, input_channels=3, dropout_rate=0.2):
         super(MobileNetV3Large, self).__init__()
         from torchvision.models import mobilenet_v3_large
@@ -139,11 +123,5 @@ class MobileNetV3Large(nn.Module):
 
 
 def create_mobilenet_v3_large(num_classes=26, pretrained=True, input_channels=3, dropout_rate=0.2):
-    """Factory function for MobileNetV3-Large"""
+    
     return MobileNetV3Large(num_classes, pretrained, input_channels, dropout_rate)
-
-
-# For backward compatibility
-class FSCMobileNetV3Small(MobileNetV3Small):
-    """Legacy class name for compatibility"""
-    pass
