@@ -33,8 +33,8 @@ class SimpleModelFactory:
         
         # ========== KAN-INSPIRED ARCHITECTURES (Fast, CNN-based) ==========
         elif model_name == 'kan_inspired' :
-            from models.architectures.kan_models import create_high_performance_kan
-            return create_high_performance_kan(input_shape, num_classes)
+            from models.architectures.KAN_inspired_models import create_high_performance_kan_inspired
+            return create_high_performance_kan_inspired(input_shape, num_classes)
         elif model_name == 'ickan_inspired' :
             from models.architectures.ickan_models import create_high_performance_ickan
             return create_high_performance_ickan(input_shape, num_classes)

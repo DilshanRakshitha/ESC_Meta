@@ -1,25 +1,17 @@
-"""
-ESC Meta - Hyperparameter Optimization Integration
-Example script showing how to use the optimization system
-"""
-
 import sys
 import argparse
 import numpy as np
 from pathlib import Path
 
-# Add project root to path
 project_root = Path(__file__).parent
 sys.path.append(str(project_root))
 
-# Import your existing modules
 from main import FSCMetaMain
 from optimization.hyperparameter_optimizer import HyperparameterOptimizer
 from optimization.optimization_config import OptimizationConfig
 
-# Import model factories
 from models.architectures.AlexNet import AlexNet
-from models.architectures.kan_models import create_high_performance_kan
+from models.architectures.KAN_inspired_models import create_high_performance_kan_inspired
 from models.architectures.ickan_models import create_high_performance_ickan
 from models.architectures.wavkan_models import create_high_performance_wavkan
 
@@ -51,7 +43,7 @@ def create_kan_factory():
             kan_input_shape = (input_shape[1], input_shape[2], input_shape[0])
         else:
             kan_input_shape = input_shape
-        return create_high_performance_kan(kan_input_shape, num_classes)
+        return create_high_performance_kan_inspired(kan_input_shape, num_classes)
     
     factory.__name__ = 'create_kan'
     return factory

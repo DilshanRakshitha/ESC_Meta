@@ -1,22 +1,16 @@
-"""
-KAN (Kolmogorov-Arnold Network) Models for Audio Classification
-High-performance KAN architecture with 90%+ accuracy
-"""
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from typing import Tuple, Optional, Dict, Any
 
-# Define ModelConfig locally to avoid circular imports
 class ModelConfig:
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             setattr(self, key, value)
 
 class ResidualKANBlock(nn.Module):
-    """Residual block with KAN-inspired nonlinearities"""
+    
     def __init__(self, in_channels: int, out_channels: int, dropout: float = 0.1):
         super().__init__()
         
@@ -28,7 +22,7 @@ class ResidualKANBlock(nn.Module):
         
         # KAN-inspired nonlinear activations
         self.kan_activation = nn.Sequential(
-            nn.SiLU(),  # Swish activation (like KAN splines)
+            nn.SiLU(),
             nn.Dropout2d(dropout)
         )
         
@@ -50,8 +44,7 @@ class ResidualKANBlock(nn.Module):
         
         return out
 
-class HighPerformanceKAN(nn.Module):
-    """High-performance KAN model using proven techniques"""
+class HighPerformanceKANinspired(nn.Module):
     
     def __init__(self, input_shape: Tuple[int, int, int], num_classes: int, config: ModelConfig = None):
         super().__init__()
@@ -106,14 +99,13 @@ class HighPerformanceKAN(nn.Module):
             nn.Linear(hidden_dim // 2, num_classes)
         )
         
-        # Initialize weights properly
         self.apply(self._init_weights)
         
         param_count = sum(p.numel() for p in self.parameters())
-        print(f"HighPerformanceKAN created with {param_count:,} parameters")
+        print(f"KAN inspired model created with {param_count:,} parameters")
         
     def _init_weights(self, m):
-        """Proper weight initialization"""
+        """Weight initialization"""
         if isinstance(m, nn.Conv2d):
             nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
             if m.bias is not None:
@@ -146,7 +138,7 @@ class HighPerformanceKAN(nn.Module):
         
         return x
 
-class BasicKAN(nn.Module):
+class BasicKANinpired(nn.Module):
     """Basic KAN model for comparison"""
     
     def __init__(self, input_shape: Tuple[int, int, int], num_classes: int, config: ModelConfig = None):
@@ -191,7 +183,7 @@ class BasicKAN(nn.Module):
         )
         
         param_count = sum(p.numel() for p in self.parameters())
-        print(f"BasicKAN created with {param_count:,} parameters")
+        print(f"Basic model created with {param_count:,} parameters")
     
     def forward(self, x):
         if x.dim() == 4 and x.shape[1] != 3:
@@ -203,8 +195,7 @@ class BasicKAN(nn.Module):
         
         return x
 
-def create_kan_model(config: ModelConfig) -> nn.Module:
-    """Factory function to create KAN models"""
+def create_kan_inspired_model(config: ModelConfig) -> nn.Module:
     
     input_shape = tuple(config.input_shape)
     num_classes = config.num_classes
@@ -212,14 +203,13 @@ def create_kan_model(config: ModelConfig) -> nn.Module:
     model_type = getattr(config, 'model_type', 'high_performance')
     
     if model_type == 'high_performance':
-        return HighPerformanceKAN(input_shape, num_classes, config)
+        return HighPerformanceKANinspired(input_shape, num_classes, config)
     elif model_type == 'basic':
-        return BasicKAN(input_shape, num_classes, config)
+        return BasicKANinpired(input_shape, num_classes, config)
     else:
-        raise ValueError(f"Unknown KAN model type: {model_type}")
+        raise ValueError(f"Unknown model type: {model_type}")
 
-# For backward compatibility
-def create_high_performance_kan(input_shape: Tuple[int, int, int], num_classes: int) -> nn.Module:
-    """Backward compatibility function"""
+def create_high_performance_kan_inspired(input_shape: Tuple[int, int, int], num_classes: int) -> nn.Module:
+    
     config = ModelConfig(input_shape=input_shape, num_classes=num_classes)
-    return create_kan_model(config)
+    return create_kan_inspired_model(config)

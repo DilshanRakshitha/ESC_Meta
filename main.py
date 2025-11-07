@@ -92,8 +92,8 @@ def create_model_factory(model_name: str, num_classes: int = 26):
         
         # ========== KAN-INSPIRED ARCHITECTURES (Fast, CNN-based) ==========
         elif model_name_lower == 'kan_inspired' :
-            from models.architectures.kan_models import create_high_performance_kan
-            return create_high_performance_kan(input_shape, num_classes)
+            from models.architectures.KAN_inspired_models import create_high_performance_kan_inspired
+            return create_high_performance_kan_inspired(input_shape, num_classes)
         elif model_name_lower == 'ickan_inspired' :
             from models.architectures.ickan_models import create_high_performance_ickan
             return create_high_performance_ickan(input_shape, num_classes)

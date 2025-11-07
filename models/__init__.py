@@ -6,13 +6,13 @@ Provides access to KAN, WavKAN, ICKAN model architectures and advanced training 
 # Import our new modular architectures
 try:
     from .architectures import (
-        create_kan_model, HighPerformanceKAN, BasicKAN,
+        create_kan_inspired_model, HighPerformanceKANinspired, BasicKANinpired,
         create_wavkan_model, HighPerformanceWavKAN, BasicWavKAN,
         create_ickan_model, HighPerformanceICKAN, BasicICKAN
     )
 except ImportError as e:
     print(f"Warning: Could not import modular architectures: {e}")
-    create_kan_model = HighPerformanceKAN = BasicKAN = None
+    create_kan_inspired_model = HighPerformanceKANinspired = BasicKANinpired = None
     create_wavkan_model = HighPerformanceWavKAN = BasicWavKAN = None
     create_ickan_model = HighPerformanceICKAN = BasicICKAN = None
 
@@ -35,7 +35,7 @@ except ImportError:
 
 __all__ = [
     # New modular KAN architectures
-    'create_kan_model', 'HighPerformanceKAN', 'BasicKAN',
+    'create_kan_inspired_model', 'HighPerformanceKANinspired', 'BasicKANinpired',
     'create_wavkan_model', 'HighPerformanceWavKAN', 'BasicWavKAN',
     'create_ickan_model', 'HighPerformanceICKAN', 'BasicICKAN',
     
