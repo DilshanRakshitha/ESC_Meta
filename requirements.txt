@@ -1,4 +1,5 @@
-torch>=1.13.0torchvision>=0.14.0
+torch>=1.13.0
+torchvision>=0.14.0
 torchaudio>=0.13.0
 numpy>=1.21.0
 pandas>=1.3.0
