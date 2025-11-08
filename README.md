@@ -15,14 +15,14 @@ cd ESC_Meta
 pip install -r requirements.txt
 ```
 
-3. Prepare your data structure:
+3. Preparee a data folder in the root directory, extract data in place wav44 folder and FSC22.csv file in the follwing way.. Then run then install requirements. Then extract features. Then tran the model. 
 ```
 ESC_Meta/
 ├── data/
 │   └── fsc22/
 │       ├── FSC22.csv          # Dataset metadata
 │       ├── wav44/             # Audio files (.wav)
-│       └── Pickle_Files/      # Generated features (created automatically)
+│    
 └── ...
 ```
 
