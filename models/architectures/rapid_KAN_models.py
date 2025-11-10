@@ -176,17 +176,17 @@ class RapidESC_KAN(torch.nn.Module):
         for i, (kan_layer, batch_norm, dropout, residual_proj) in enumerate(
             zip(self.kan_layers, self.batch_norms, self.dropouts, self.residual_projections)
         ):
-            residual = x
+            # residual = x
             
             # KAN transformation
             x = kan_layer(x)
             
             # Residual connection
-            if residual_proj is not None:
-                if isinstance(residual_proj, torch.nn.Identity):
-                    x = x + residual
-                else:
-                    x = x + residual_proj(residual)
+            # if residual_proj is not None:
+            #     if isinstance(residual_proj, torch.nn.Identity):
+            #         x = x + residual
+            #     else:
+            #         x = x + residual_proj(residual)
             
             # Batch norm and dropout
             x = batch_norm(x)
