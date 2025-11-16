@@ -12,3 +12,7 @@ data
 optimization/plots
 optimization/logs
 optimization/results
+results
+model_files
+logs
+latency_reports

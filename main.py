@@ -1,10 +1,11 @@
 import os
-import sys
 import argparse
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
+import time
+from inference.latency_report import export_model_and_generate_reports
 
 # Global variable to store fold data for proper cross-validation
 _folds_data_cache = None
@@ -139,7 +140,7 @@ def create_model_factory(model_name: str, num_classes: int = 26):
     
     return model_factory
 
-def run_fsc22_cross_validation(model_name: str, n_folds: int = 5, cuda: bool = False):
+def run_fsc22_cross_validation(model_name: str, n_folds: int = 5, cuda: bool = False, epochs: int | None = None, measure_latency: bool = True):
     
     fold_info = load_fsc22_folds(model_name)
     if fold_info is None:
@@ -182,7 +183,23 @@ def run_fsc22_cross_validation(model_name: str, n_folds: int = 5, cuda: bool = F
             return None
 
         print(f"Running {n_folds}-fold cross-validation")
-        results = cv_trainer.run_kfold_training_with_folds(_folds_data_cache, n_splits=n_folds)
+        # If epochs override provided, inject into trainer by monkey-patching FSCTrainer defaults
+        original_init = None
+        if epochs is not None and epochs > 0:
+            from models.training import trainer as trainer_module
+            original_init = trainer_module.FSCTrainer.__init__
+            def patched_init(self, model, device, fold_num=1):
+                original_init(self, model, device, fold_num)
+                self.epochs = epochs
+            trainer_module.FSCTrainer.__init__ = patched_init
+            print(f"Epoch override applied: {epochs} epochs per fold")
+        try:
+            results = cv_trainer.run_kfold_training_with_folds(_folds_data_cache, n_splits=n_folds)
+        finally:
+            # Restore original init to avoid side effects for future runs
+            if original_init is not None:
+                from models.training import trainer as trainer_module
+                trainer_module.FSCTrainer.__init__ = original_init
         
         print(f"\n{model_name.upper()} - FSC22 5-Fold Cross-Validation Results:")
         print("=" * 70)
@@ -207,8 +224,28 @@ def run_fsc22_cross_validation(model_name: str, n_folds: int = 5, cuda: bool = F
             f.write(f"Best Fold: {results['best_fold_acc']:.2f}%\n")
         
         print(f"Results saved to {results_file}")
-        
-        return results
+
+        # ===== Post-training artifacts: delegate to inference module =====
+        best_entry = None
+        if 'fold_results' in results and results['fold_results']:
+            best_entry = max(results['fold_results'], key=lambda e: e.get('best_val_acc', 0.0))
+        best_fold_id = None
+        if best_entry is not None:
+            best_fold_id = best_entry.get('val_fold', best_entry.get('fold', None))
+        if best_fold_id is None and fold_accuracies:
+            best_idx = int(np.argmax(fold_accuracies))
+            best_fold_id = best_idx + 1
+        artifact_info = export_model_and_generate_reports(
+            model_name=model_name,
+            model_factory=model_factory,
+            device=device,
+            cv_results=results,
+            folds_data_cache=_folds_data_cache,
+            best_fold_id=best_fold_id,
+            batch_size=32,
+            measure_latency=measure_latency,
+        )
+        return {**results, 'artifacts': artifact_info}
         
     except Exception as e:
         print(f"Cross-validation training failed: {e}")
@@ -221,14 +258,16 @@ def main():
     parser.add_argument('--model', type=str, help='Train model on FSC22 data with 5-fold CV')
     parser.add_argument('--list', action='store_true', help='List available models')
     parser.add_argument('--gpu', action='store_true', help='Use GPU for training (default: CPU)')
+    parser.add_argument('--epochs', type=int, default=None, help='Override default epochs for quick experimentation')
+    parser.add_argument('--no-latency', action='store_true', help='Skip latency measurement during training artifact export')
     
     args = parser.parse_args()
     
     # Complete list of all available models
     available_models = [
         # CNN Models
-        'alexnet', 'densenet', 'efficientnet', 'inception', 
-        'mobilenet', 'mobilenetv3large', 'resnet', 'resnet18',
+    'alexnet', 'densenet', 'efficientnet', 'inception', 
+    'mobilenet', 'mobilenetv3large', 'resnet50', 'resnet18',
         # KAN-Inspired (Fast)
         'kan_inspired', 'ickan_inspired', 'wavkan_inspired',
         # KAN
@@ -254,7 +293,9 @@ def main():
             return
         
         print("Starting FSC22 training with 5-fold cross-validation")
-        run_fsc22_cross_validation(model_name, cuda=args.gpu)
+        if args.epochs is not None:
+            print(f"Epoch override requested: {args.epochs}")
+        run_fsc22_cross_validation(model_name, cuda=args.gpu, epochs=args.epochs, measure_latency=(not args.no_latency))
     
     else:
         print("Environment Sound Classification")
@@ -264,9 +305,6 @@ def main():
         print("  --gpu                     Use GPU for training (default: CPU)")
         print("  python main.py --model alexnet      # Train on real FSC22 data (CPU)")
         print("  python main.py --model alexnet --gpu  # Train with GPU")
-
-if __name__ == "__main__":
-    main()
 
 if __name__ == "__main__":
     main()
