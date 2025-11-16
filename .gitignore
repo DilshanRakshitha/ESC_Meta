@@ -16,3 +16,8 @@ results
 model_files
 logs
 latency_reports
+latency_report_without_residual
+logs_without_residual
+plots
+results_without_residuals
+trained_models_without_residuals
