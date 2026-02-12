@@ -252,8 +252,8 @@ class FSCFeatureGenerator:
                 for aug_type in augmentation_types:
                     aug_audio = self.augment_audio(audio, aug_type)
                     
-                    # Visualize first augmented sample if enabled
-                    if self.enable_visualization and visualized_count <= max_visualizations and idx == 0:
+                    # Visualize augmentations if within limit
+                    if self.enable_visualization and visualized_count < max_visualizations:
                         self.visualizer.plot_waveform(
                             aug_audio,
                             'Audio Signal',

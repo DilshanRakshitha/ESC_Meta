@@ -231,8 +231,8 @@ def generate_features(audios, feature_type='MEL', augment_level=3, enable_visual
                 for aug_id, aug_name in augmentation_types:
                     aug_audio = augmentor(audio, aug_id)
                     
-                    # Visualize first sample's augmentations
-                    if should_visualize and sample_idx == 0:
+                    # Visualize augmentations if within limit
+                    if should_visualize:
                         visualizer.plot_waveform(
                             aug_audio,
                             'Audio Signal',
@@ -360,7 +360,7 @@ def main():
         csv_path = resolve_path(args.csv_path)
         audio_path = resolve_path(args.audio_path)
         output_path = resolve_path(args.output)
-        viz_output = resolve_path(args.viz_output) if args.visualize else None
+        viz_output = resolve_path(args.viz_output)
         
         print(f"Using paths:")
         print(f"  CSV: {csv_path}")
