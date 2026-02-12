@@ -10,15 +10,23 @@ warnings.filterwarnings('ignore')
 
 class FSCFeatureGenerator:
     
-    def __init__(self, sr=20000, duration=5):
+    def __init__(self, sr=20000, duration=5, enable_visualization=False, visualization_output_dir='audio_visualizations'):
         """
         Args:
             sr: Sample rate (default: 20000)
             duration: Audio duration in seconds (default: 5)
+            enable_visualization: Enable audio waveform visualization (default: False)
+            visualization_output_dir: Directory to save visualization images (default: 'audio_visualizations')
         """
         self.sr = sr
         self.duration = duration
         self.input_length = sr * duration
+        self.enable_visualization = enable_visualization
+        self.visualizer = None
+        
+        if enable_visualization:
+            from utils.audio_visualizer import AudioVisualizer
+            self.visualizer = AudioVisualizer(sr, visualization_output_dir)
         
         # Audio augmentation
         self.gaussian_noise = aa.AddGaussianNoise(
@@ -168,12 +176,13 @@ class FSCFeatureGenerator:
             return None
     
     def extract_features_with_augmentation(self, audios: List[Tuple], feature_type: str = 'MEL', 
-                                         augment_level: int = 0) -> List[List]:
+                                         augment_level: int = 0, max_visualizations: int = 3) -> List[List]:
         """
         Args:
             audios: List of (audio, label) tuples
             feature_type: 'MEL', 'MFCC', or 'MIX'
             augment_level: Augmentation level (0-4)
+            max_visualizations: Maximum number of samples to visualize (default: 3)
             
         Returns:
             List of [feature, label, is_original] triplets
@@ -190,14 +199,37 @@ class FSCFeatureGenerator:
             raise ValueError(f"Unknown feature type: {feature_type}")
         
         features = []
+        visualized_count = 0
         
-        for audio, label in audios:
+        for idx, (audio, label) in enumerate(audios):
             try:
-                # Normalize audio length
+                # Save raw audio before preprocessing (for visualization)
+                raw_audio = audio.copy() if self.enable_visualization and visualized_count < max_visualizations else None
+                
+                # Normalize audio length (preprocessing)
                 if len(audio) < self.input_length:
                     audio = self.padding(audio, self.input_length)
                 elif len(audio) > self.input_length:
                     audio = self.random_crop(audio, self.input_length)
+                
+                # Visualize first few samples if enabled
+                if self.enable_visualization and visualized_count < max_visualizations and raw_audio is not None:
+                    self.visualizer.plot_waveform(
+                        raw_audio,
+                        'Audio Signal',
+                        f'sample_{idx}_class_{label}_1_before_preprocessing',
+                        'Before Preprocessing',
+                        label
+                    )
+                    self.visualizer.plot_waveform(
+                        audio,
+                        'Audio Signal',
+                        f'sample_{idx}_class_{label}_2_after_preprocessing',
+                        'After Preprocessing',
+                        label
+                    )
+                    visualized_count += 1
+                    print(f"  Visualized sample {idx} (class {label})")
                 
                 # Original sample
                 original_feature = extractor(audio)
@@ -219,6 +251,17 @@ class FSCFeatureGenerator:
                 # Generate augmented samples
                 for aug_type in augmentation_types:
                     aug_audio = self.augment_audio(audio, aug_type)
+                    
+                    # Visualize first augmented sample if enabled
+                    if self.enable_visualization and visualized_count <= max_visualizations and idx == 0:
+                        self.visualizer.plot_waveform(
+                            aug_audio,
+                            'Audio Signal',
+                            f'sample_{idx}_class_{label}_3_after_augmentation_{aug_type}',
+                            f'After Augmentation ({aug_type})',
+                            label
+                        )
+                    
                     aug_feature = extractor(aug_audio)
                     if aug_feature is not None:
                         features.append([aug_feature, label, False])  # False = augmented

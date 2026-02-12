@@ -87,10 +87,21 @@ def mixed_features_extractor(raw_audio):
     three_channel = np.stack((feature_1, feature_2, feature_3), axis=2)
     return three_channel
 
-def load_audio_files(csv_path, audio_base_path):
+def load_audio_files(csv_path, audio_base_path, enable_visualization=False, 
+                    viz_output_dir='audio_visualizations', max_viz_samples=3):
     
     df = pd.read_csv(csv_path)
     audios = []
+    
+    # Initialize visualizer if enabled
+    visualizer = None
+    visualized_count = 0
+    if enable_visualization:
+        import sys
+        sys.path.insert(0, str(get_project_root()))
+        from utils.audio_visualizer import AudioVisualizer
+        visualizer = AudioVisualizer(SAMPLE_RATE, viz_output_dir)
+        print(f"Visualization enabled during audio loading. Output: {viz_output_dir}")
     
     batch_size = 50
     total_batches = len(df) // batch_size + (1 if len(df) % batch_size > 0 else 0)
@@ -111,6 +122,17 @@ def load_audio_files(csv_path, audio_base_path):
                     
                     audio, sr = librosa.load(audio_path, sr=SAMPLE_RATE, duration=5.0)
                     
+                    # Visualize raw audio before preprocessing
+                    if enable_visualization and visualized_count < max_viz_samples:
+                        visualizer.plot_waveform(
+                            audio,
+                            'Audio Signal',
+                            f'sample_{i}_class_{label}_1_before_preprocessing',
+                            'Before Preprocessing (Raw)',
+                            label
+                        )
+                        visualized_count += 1
+                    
                     
                     if len(audio) < INPUT_LENGTH:
                         audio = padding(audio, INPUT_LENGTH)
@@ -128,7 +150,8 @@ def load_audio_files(csv_path, audio_base_path):
         gc.collect()
     return audios
 
-def generate_features(audios, feature_type='MEL', augment_level=3):
+def generate_features(audios, feature_type='MEL', augment_level=3, enable_visualization=False, 
+                     viz_output_dir='audio_visualizations', max_viz_samples=3):
     
     
     print(f"Extracting {feature_type} features with augmentation level {augment_level}")
@@ -142,7 +165,17 @@ def generate_features(audios, feature_type='MEL', augment_level=3):
     else:
         raise ValueError(f"Unknown feature type: {feature_type}")
     
+    # Initialize visualizer if enabled
+    visualizer = None
+    if enable_visualization:
+        import sys
+        sys.path.insert(0, str(get_project_root()))
+        from utils.audio_visualizer import AudioVisualizer
+        visualizer = AudioVisualizer(SAMPLE_RATE, viz_output_dir)
+        print(f"Visualization enabled. Saving waveforms to: {viz_output_dir}")
+    
     spects = []
+    visualized_count = 0
     
     batch_size = 25
     total_batches = len(audios) // batch_size + (1 if len(audios) % batch_size > 0 else 0)
@@ -156,38 +189,66 @@ def generate_features(audios, feature_type='MEL', augment_level=3):
         
         for i, element in enumerate(batch_audios):
             audio, label = element[0], element[1]
+            sample_idx = start_idx + i
+            
+            # Visualize first few samples if enabled
+            should_visualize = enable_visualization and visualized_count < max_viz_samples
             
             try:
+                # Save audio after preprocessing for visualization
+                if should_visualize:
+                    visualizer.plot_waveform(
+                        audio,
+                        'Audio Signal',
+                        f'sample_{sample_idx}_class_{label}_2_after_preprocessing',
+                        'After Preprocessing',
+                        label
+                    )
+                
                 original_feature = extractor(audio)
                 spects.append([original_feature, label, True])
             except Exception as e:
-                print(f"Warning: Failed to extract original features for sample {start_idx + i}: {e}")
+                print(f"Warning: Failed to extract original features for sample {sample_idx}: {e}")
                 continue
             
             try:
+                augmentation_types = []
                 if augment_level == 1:  # Time stretch only
-                    spects.append([extractor(augmentor(audio, 2)), label, False])  # speed up
-                    spects.append([extractor(augmentor(audio, 3)), label, False])  # slow down
+                    augmentation_types = [(2, 'speed_up'), (3, 'slow_down')]
                     
                 elif augment_level == 2:  # Pitch shift only
-                    spects.append([extractor(augmentor(audio, 4)), label, False])  # pitch up
-                    spects.append([extractor(augmentor(audio, 5)), label, False])  # pitch down
+                    augmentation_types = [(4, 'pitch_up'), (5, 'pitch_down')]
                     
                 elif augment_level == 3:  # Both time stretch and pitch shift
-                    spects.append([extractor(augmentor(audio, 2)), label, False])  # speed up
-                    spects.append([extractor(augmentor(audio, 3)), label, False])  # slow down
-                    spects.append([extractor(augmentor(audio, 4)), label, False])  # pitch up
-                    spects.append([extractor(augmentor(audio, 5)), label, False])  # pitch down
+                    augmentation_types = [(2, 'speed_up'), (3, 'slow_down'), 
+                                         (4, 'pitch_up'), (5, 'pitch_down')]
                     
                 elif augment_level == 4:  # All augmentations
-                    spects.append([extractor(augmentor(audio, 2)), label, False])  # speed up
-                    spects.append([extractor(augmentor(audio, 3)), label, False])  # slow down
-                    spects.append([extractor(augmentor(audio, 4)), label, False])  # pitch up
-                    spects.append([extractor(augmentor(audio, 5)), label, False])  # pitch down
-                    spects.append([extractor(augmentor(audio, 6)), label, False])  # reverse + noise
+                    augmentation_types = [(2, 'speed_up'), (3, 'slow_down'), 
+                                         (4, 'pitch_up'), (5, 'pitch_down'),
+                                         (6, 'reverse_noise')]
+                
+                for aug_id, aug_name in augmentation_types:
+                    aug_audio = augmentor(audio, aug_id)
+                    
+                    # Visualize first sample's augmentations
+                    if should_visualize and sample_idx == 0:
+                        visualizer.plot_waveform(
+                            aug_audio,
+                            'Audio Signal',
+                            f'sample_{sample_idx}_class_{label}_3_after_augmentation_{aug_name}',
+                            f'After Augmentation ({aug_name})',
+                            label
+                        )
+                    
+                    spects.append([extractor(aug_audio), label, False])
+                
+                if should_visualize:
+                    visualized_count += 1
+                    print(f"  Visualized sample {sample_idx} (class {label})")
                     
             except Exception as e:
-                print(f"Warning: Failed augmentation for sample {start_idx + i}: {e}")
+                print(f"Warning: Failed augmentation for sample {sample_idx}: {e}")
                 continue
         
         gc.collect()
@@ -273,6 +334,15 @@ def main():
                        choices=[0, 1, 2, 3, 4],
                        help='Augmentation level: 0=none, 1=ts, 2=ps, 3=ts+ps, 4=all')
     
+    parser.add_argument('--visualize', '-v', action='store_true',
+                       help='Enable audio waveform visualization')
+    
+    parser.add_argument('--viz-output', type=str, default='audio_visualizations',
+                       help='Output directory for visualizations (default: audio_visualizations)')
+    
+    parser.add_argument('--viz-samples', type=int, default=3,
+                       help='Number of samples to visualize (default: 3)')
+    
     # Preset for exact requirement
     parser.add_argument('--preset', '-p', type=str,
                        choices=['aug_ts_ps_mel_features_5_20'],
@@ -290,19 +360,29 @@ def main():
         csv_path = resolve_path(args.csv_path)
         audio_path = resolve_path(args.audio_path)
         output_path = resolve_path(args.output)
+        viz_output = resolve_path(args.viz_output) if args.visualize else None
         
         print(f"Using paths:")
         print(f"  CSV: {csv_path}")
         print(f"  Audio: {audio_path}")
         print(f"  Output: {output_path}")
+        if args.visualize:
+            print(f"  Visualization output: {viz_output}")
+            print(f"  Visualizing {args.viz_samples} samples")
 
-        audios = load_audio_files(csv_path, audio_path)
+        audios = load_audio_files(csv_path, audio_path, 
+                                 enable_visualization=args.visualize,
+                                 viz_output_dir=viz_output,
+                                 max_viz_samples=args.viz_samples)
         
         if not audios:
             print(" No audio files loaded!")
             return
         
-        spects = generate_features(audios, args.feature_type, args.augmentation)
+        spects = generate_features(audios, args.feature_type, args.augmentation,
+                                  enable_visualization=args.visualize,
+                                  viz_output_dir=viz_output,
+                                  max_viz_samples=args.viz_samples)
         
         if not spects:
             print(" No features generated!")
@@ -312,6 +392,8 @@ def main():
         
         print(f"\n Feature generation completed successfully!")
         print(f" Output: {final_output_path}")
+        if args.visualize:
+            print(f" Visualizations saved to: {viz_output}")
         
     except Exception as e:
         print(f" Error during feature generation: {e}")
