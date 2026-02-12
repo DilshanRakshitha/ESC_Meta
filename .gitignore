@@ -21,3 +21,11 @@ logs_without_residual
 plots
 results_without_residuals
 trained_models_without_residuals
+
+# Test files
+test_visualization.py
+test_visualizations/
+test_visualizations_fsc/
+
+# Visualization outputs (optional - users may want to version these)
+# audio_visualizations/

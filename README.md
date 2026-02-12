@@ -62,6 +62,23 @@ python generate_features.py --preset aug_ts_ps_mel_features_5_20
 - `--feature-type, -f`: Feature type - MEL, MFCC, MIX (default: MEL)
 - `--augmentation, -aug`: Augmentation level 0-4 (default: 3)
 - `--preset, -p`: Use preset configuration (aug_ts_ps_mel_features_5_20)
+- `--visualize, -v`: Enable audio waveform visualization
+- `--viz-output`: Output directory for visualizations (default: audio_visualizations)
+- `--viz-samples`: Number of samples to visualize (default: 3)
+
+**Audio Visualization:**
+
+Generate waveform visualizations at different processing stages:
+
+```bash
+# Enable visualization during feature generation
+python generate_features.py --visualize --viz-samples 5
+
+# Custom visualization output directory
+python generate_features.py --visualize --viz-output my_plots
+```
+
+See [Audio Visualization Documentation](docs/AUDIO_VISUALIZATION.md) for details.
 
 ### 2. Model Training
 
